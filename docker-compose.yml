@@ -1,0 +1,150 @@
+name: Summary_test_-_the_muezzin
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data_newsgroups:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - elastic_kafka
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.1.2
+    restart: unless-stopped
+    depends_on:
+      elasticsearch: { condition: service_healthy }
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - elastic_kafka
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: "1"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      CLUSTER_ID: "GN6dEcxIR16qMCV7CauyTw"
+      KAFKA_CLUSTER_ID: "GN6dEcxIR16qMCV7CauyTw"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+    networks:
+      - elastic_kafka
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/29092'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
+    depends_on:
+      kafka: { condition: service_healthy }
+    ports:
+      - "9080:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: "local"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
+    networks:
+      - elastic_kafka
+
+  mongodb:
+    image: mongo:latest
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "admin"
+      MONGO_INITDB_ROOT_PASSWORD: "admin123456"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - elastic_kafka
+    healthcheck:
+      test: ["CMD","mongosh","--quiet","--username","admin","--password","admin123456","--eval","db.adminCommand('ping').ok ? 0 : 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    depends_on:
+      mongodb: { condition: service_healthy }
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: "mongodb"
+      ME_CONFIG_MONGODB_PORT: "27017"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "admin123456"
+      ME_CONFIG_BASICAUTH: "false"
+    networks:
+      - elastic_kafka
+
+
+
+volumes:
+  elasticsearch_data_newsgroups:
+  mongodb_data:
+
+networks:
+  elastic_kafka: {}
+
+
+
+
+
+  #  newsgroups:
+  #    build:
+  #      context: app
+  #      dockerfile: Dockerfile
+  #    restart: unless-stopped
+  #    depends_on:
+  #      elasticsearch: { condition: service_healthy }
+  #    ports:
+  #      - "8182:8182"
+  #    environment:
+  #      - ELASTICSEARCH_PROTOCOL=http
+  #      - ELASTICSEARCH_HOST=elasticsearch
+  #      - ELASTICSEARCH_PORT=9200
+  #      - LOG_LEVEL=INFO
+  #      - ELASTICSEARCH_INDEX=newsgroups
+  #    networks:
+  #      - elastic_network
+  #    healthcheck:
+  #        test: ["CMD-SHELL", "curl -f http://localhost:8182/health || exit 1"]
+  #        interval: 30s
+  #        timeout: 10s
+  #        retries: 5
+  #        start_period: 60s
