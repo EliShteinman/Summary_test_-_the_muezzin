@@ -1,16 +1,24 @@
 import hashlib
-
-
+from utilities.elasticsearch_service import ElasticsearchService
+from utilities.mongo_utils import SingletonMongoClient
+import gridfs
 
 class Proses:
-    def __init__(self, mongodb, elasticsearch):
+    def __init__(self, mongodb: SingletonMongoClient, elasticsearch: ElasticsearchService):
         self.mongodb = mongodb
-        self.elasticsearch = elasticsearch
+        self.elastic = elasticsearch
+        self.fs = gridfs.GridFS(self.mongodb.get_collection())
+        self.collection = self.mongodb.get_collection()
 
     async def proses(self, data:dict):
         path = data['file_path']
         meta_data = data['meta_data']
         file_hash = self.get_audio_file_hash(path)
+        meta_data['file_hash'] = file_hash
+        await self.elastic.create_document(meta_data)
+        file_id = self.proses_file(path, file_hash)
+        await self.collection.update_one({'file_hash': file_hash}, {'$set': {'file_id': file_id}})
+        return file_id
 
 
     def get_audio_file_hash(self, file_path, algorithm='sha256', buffer_size=65536):
@@ -39,3 +47,8 @@ class Proses:
             return f"Error: File not found at {file_path}"
         except Exception as e:
             return f"An error occurred: {e}"
+
+
+    def proses_file(self, file_path, file_hash):
+        file_id = self.fs.put(open(file_path, 'rb'), filename=file_hash)
+        return file_id

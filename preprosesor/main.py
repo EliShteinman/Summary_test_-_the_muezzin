@@ -1,10 +1,11 @@
 import asyncio
 import logging
-from pprint import pprint
 import config
 from preprosesor.proses import Proses
+from elasticsearch import AsyncElasticsearch
 from utilities.kafka.async_client import KafkaConsumerAsync
-
+from utilities.elasticsearch_service import ElasticsearchService
+from utilities.mongo_utils import SingletonMongoClient
 
 
 logging.basicConfig(level=config.LOG_LEVEL)
@@ -32,23 +33,19 @@ async def main(
         group_id=group_id,
     )
 
-    # client = MongoDBAsyncClient(
-    #     mongo_uri,
-    #     mongo_db_name
-    # )
-    #
-    # es = ElasticsearchAsyncClient(es_url)
-    # await es.connect()
-    # await es.create_index(es_index)
+    mongo_client = SingletonMongoClient(
+        mongo_uri,
+        mongo_db_name,
+        collections_name
+    )
+    await mongo_client.connect_and_verify()
+    logger.info("Connected to MongoDB")
+    es_client = AsyncElasticsearch(es_url)
+    es_services = ElasticsearchService(es_client, es_index)
+    await es_services.initialize_index()
+    logger.info("Elasticsearch index initialized")
 
-
-
-    # connect = await client.connect()
-    # logger.info(f"MongoDB client connected {connect}")
-
-    # repository = MongoDBAsyncRepository(client, collections_name)
-
-    proses = Proses("c","g")
+    proses = Proses(mongo_client, es_services)
 
 
     try:
@@ -65,8 +62,8 @@ async def main(
             try:
                 async for data in consumer.consume():
                     try:
-                        proses.get_audio_file_hash(data['value']['data']['file_path'])
-                        pprint(data['value']['data'])
+                        result = await proses.proses(data)
+                        logger.info(f"Podcast processed: {result}")
                     except Exception as e:
                         logger.error(f"Failed to insert tweet from topic {data['topic']}: {e}")
                         continue
@@ -108,16 +105,18 @@ if __name__ == "__main__":
 
 
 
-        asyncio.run(main(
-            boostrap_servers,
-            topics,
-            group_id,
-            mongo_uri,
-            mongo_db_name,
-            collections_name
-            ,es_url,
-            es_index
-        ))
+        asyncio.run(
+            main(
+                boostrap_servers,
+                topics,
+                group_id,
+                mongo_uri,
+                mongo_db_name,
+                collections_name,
+                es_url,
+                es_index
+            )
+        )
     except Exception as e:
         logger.critical(f"Critical error in main: {e}")
         raise

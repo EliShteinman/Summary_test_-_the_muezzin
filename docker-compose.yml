@@ -95,6 +95,8 @@ services:
       - mongodb_data:/data/db
     networks:
       - elastic_kafka
+    ports:
+      - "27017:27017"
     healthcheck:
       test: ["CMD","mongosh","--quiet","--username","admin","--password","admin123456","--eval","db.adminCommand('ping').ok ? 0 : 1"]
       interval: 20s
