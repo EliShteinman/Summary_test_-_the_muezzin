@@ -1,6 +1,3 @@
-# ============================================================================
-# utilities/kafka/async_client.py - FIXED VERSION
-# ============================================================================
 import asyncio
 import logging
 from typing import Any, List, Optional, Callable, Dict
@@ -20,7 +17,7 @@ class KafkaProducerAsync:
     לשליחת הודעות ב-async/await
     """
 
-    def __init__(self, bootstrap_servers: str = "http://localhost:9092", **config):
+    def __init__(self, bootstrap_servers: str = "localhost:9092", **config):
         """
         יצירת Producer אסינכרוני
 
@@ -34,8 +31,7 @@ class KafkaProducerAsync:
             'bootstrap_servers': bootstrap_servers,
             'value_serializer': lambda x: serialize_json(x).encode('utf-8'),
             'key_serializer': lambda x: x.encode('utf-8') if x else None,
-            # 'acks': 'all',
-            # 'retries': 3
+            'acks': 'all',
         }
         default_config.update(config)
         logger.debug(f"Producer config: {default_config}")
