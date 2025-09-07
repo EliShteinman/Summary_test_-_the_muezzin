@@ -38,47 +38,52 @@ services:
       retries: 5
       start_period: 60s
 
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    hostname: kafka
-    restart: unless-stopped
-    environment:
-      KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_NODE_ID: "1"
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
-      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092"
-      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
-      CLUSTER_ID: "GN6dEcxIR16qMCV7CauyTw"
-      KAFKA_CLUSTER_ID: "GN6dEcxIR16qMCV7CauyTw"
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
     networks:
       - elastic_kafka
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/29092'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.2.15
+    container_name: broker
+    networks:
+      - elastic_kafka
+    ports:
+      # To learn about configuring Kafka for access across networks see
+      # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+      - "9093:9093"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://0.0.0.0:29092,PLAINTEXT_C://0.0.0.0:9093,PLAINTEXT_L://0.0.0.0:9092,
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://broker:29092,PLAINTEXT_L://localhost:9092,PLAINTEXT_C://broker:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_L:PLAINTEXT,PLAINTEXT_C:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    restart: unless-stopped
-    depends_on:
-      kafka: { condition: service_healthy }
-    ports:
-      - "9080:8080"
-    environment:
-      DYNAMIC_CONFIG_ENABLED: "true"
-      KAFKA_CLUSTERS_0_NAME: "local"
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
     networks:
       - elastic_kafka
+    depends_on:
+      - broker
+    ports:
+      - "7777:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=broker
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:9093
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
 
   mongodb:
     image: mongo:latest
@@ -119,7 +124,8 @@ volumes:
   mongodb_data:
 
 networks:
-  elastic_kafka: {}
+  elastic_kafka:
+    driver: bridge
 
 
 
@@ -127,7 +133,7 @@ networks:
 
   #  newsgroups:
   #    build:
-  #      context: app
+  #      context: dal
   #      dockerfile: Dockerfile
   #    restart: unless-stopped
   #    depends_on:
