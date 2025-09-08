@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from elasticsearch import AsyncElasticsearch
+from elasticsearch import Elasticsearch
 
 import config
 
@@ -12,9 +12,9 @@ class Logger:
     @classmethod
     def get_logger(
         cls,
-        name="your_logger_name",
-        es_host="your_es_host_name",
-        index="your_index_logs_name",
+        name=__name__,
+        es_url=f"{config.ELASTICSEARCH_PROTOCOL}://{config.ELASTICSEARCH_HOST}:{config.ELASTICSEARCH_PORT}",
+        index=config.ELASTICSEARCH_INDEX_LOG,
         level=logging.DEBUG,
     ):
         if cls._logger:
@@ -22,12 +22,11 @@ class Logger:
         logger = logging.getLogger(name)
         logger.setLevel(level)
         if not logger.handlers:
-            es = AsyncElasticsearch(es_host)
-
+            es = Elasticsearch(es_url)
             class ESHandler(logging.Handler):
                 def emit(self, record):
                     try:
-                        es.index(
+                         es.index(
                             index=index,
                             document={
                                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -38,8 +37,7 @@ class Logger:
                         )
                     except Exception as e:
                         print(f"ES log failed: {e}")
-
             logger.addHandler(ESHandler())
-            logger.addHandler(logging.StreamHandler())
-            cls._logger = logger
-            return logger
+        logger.addHandler(logging.StreamHandler())
+        cls._logger = logger
+        return logger

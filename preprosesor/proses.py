@@ -1,18 +1,23 @@
 import hashlib
+from typing import Optional
 
+from dependencies import get_es, get_mongo
 from gridfs import AsyncGridFSBucket
-
+from logger import Logger
 import config
-from utilities.elasticsearch_service import ElasticsearchService, logger
+from utilities.elasticsearch_service import ElasticsearchService
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
+logger = Logger.get_logger()
 
 class Proses:
     def __init__(
-        self, mongo_service: MongoDBAsyncClient, elasticsearch: ElasticsearchService
+        self,
+        mongo_service: Optional[MongoDBAsyncClient] = None,
+        elasticsearch: Optional[ElasticsearchService] = None,
     ):
-        self.mongodb = mongo_service
-        self.elastic = elasticsearch
+        self.mongodb = mongo_service or get_mongo()
+        self.elastic = elasticsearch or get_es()
         self.db = self.mongodb.get_db()
         self.bucket = AsyncGridFSBucket(
             self.db, bucket_name=config.MONGO_COLLECTION_NAME
@@ -22,7 +27,7 @@ class Proses:
     async def proses(self, data: dict):
         path = data["file_path"]
         meta_data = data["meta_data"]
-        file_hash = self.get_file_hash(path)
+        file_hash = self._get_file_hash(path)
         meta_data["file_hash"] = file_hash
         meta_data["contentType"] = f"audio/{meta_data['file_suffix']}"
         logger.debug(f"meta_data: {meta_data}")
@@ -32,7 +37,8 @@ class Proses:
         await self.upload_file(path, file_hash, meta_data)
         return meta_data
 
-    def get_file_hash(self, file_path, algorithm="sha256", buffer_size=65536):
+    @staticmethod
+    def _get_file_hash(file_path, algorithm="sha256", buffer_size=65536):
         try:
             logger.info(f"Calculating hash for file {file_path}")
             hasher = hashlib.new(algorithm)

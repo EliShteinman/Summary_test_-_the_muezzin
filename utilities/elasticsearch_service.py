@@ -36,11 +36,11 @@ class ElasticsearchService:
             }
         }
 
-    async def initialize_index(self, index_name = None) -> None:
+    async def initialize_index(self, index_name=None) -> None:
         """Initialize the Elasticsearch index with proper mapping"""
         index_name = index_name or self.index_name
         try:
-            self.es.indices.delete(index=index_name, ignore_unavailable=True)
+            await self.es.indices.delete(index=index_name, ignore_unavailable=True)
             if not self.es.indices.exists(index=index_name):
                 logger.info(f"Creating index {index_name}")
                 await self.es.indices.create(

@@ -1,11 +1,8 @@
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from numpy.ma.core import count
-
 from data_load import load_meta_data_for_directory, load_meta_data_for_file
 from fastapi import FastAPI, HTTPException, status
 
