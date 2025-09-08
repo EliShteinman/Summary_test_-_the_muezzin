@@ -30,7 +30,6 @@ class DataLoad:
                     "file_creation_time" : datetime.fromtimestamp(file.stat().st_ctime).strftime("%Y-%m-%d %H:%M:%S"),
                     "file_modification_time" : datetime.fromtimestamp(file.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     "file_access_time" : datetime.fromtimestamp(file.stat().st_atime).strftime("%Y-%m-%d %H:%M:%S"),
-                    "file_permissions" : datetime.fromtimestamp(file.stat().st_mode).strftime("%Y-%m-%d %H:%M:%S"),
                     }
                 }
                 yield data
