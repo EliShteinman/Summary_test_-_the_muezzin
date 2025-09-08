@@ -103,21 +103,21 @@ services:
       timeout: 10s
       retries: 10
 
-#  mongo-express:
-#    image: mongo-express:latest
-#    restart: unless-stopped
-#    depends_on:
-#      mongodb: { condition: service_healthy }
-#    ports:
-#      - "8081:8081"
-#    environment:
-#      ME_CONFIG_MONGODB_SERVER: "mongodb"
-#      ME_CONFIG_MONGODB_PORT: "27017"
-#      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
-#      ME_CONFIG_MONGODB_ADMINPASSWORD: "admin123456"
-#      ME_CONFIG_BASICAUTH: "false"
-#    networks:
-#      - elastic_kafka
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    depends_on:
+      mongodb: { condition: service_healthy }
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: "mongodb"
+      ME_CONFIG_MONGODB_PORT: "27017"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "admin123456"
+      ME_CONFIG_BASICAUTH: "false"
+    networks:
+      - elastic_kafka
 
 
 
