@@ -8,6 +8,7 @@ import config
 from utilities.elasticsearch_service import ElasticsearchService
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
+from utilities.stt import WhisperService
 
 # set logging level for third-party libraries
 logging.getLogger("pymongo").setLevel(level=config.LOG_MONGO)
@@ -19,6 +20,7 @@ logger = Logger.get_logger()
 _consumer: Optional[KafkaConsumerAsync] = None
 _es: Optional[ElasticsearchService] = None
 _mongo: Optional[MongoDBAsyncClient] = None
+_sst: Optional[WhisperService] = None
 
 
 def set_consumer(
@@ -89,9 +91,27 @@ def get_mongo():
         raise RuntimeError("MongoDB client is not set")
     return _mongo
 
+def set_stt(
+        model_name: str = "tiny",
+        download_root: str = r"C:\models\whisper"
+):
+    global _sst
+    _sst = WhisperService(
+        model_name=model_name,
+        download_root=download_root
+    )
+    return True
+
+def get_stt():
+    if _sst is None:
+        logger.error("Whisper Service is not set")
+        raise RuntimeError("Whisper Service is not set")
+    return _sst
+
+
 
 async def cleaning_resources():
-    global _consumer, _es, _mongo
+    global _consumer, _es, _mongo, _sst
     if _consumer:
         try:
             await _consumer.stop()
@@ -109,3 +129,6 @@ async def cleaning_resources():
         except Exception as e:
             logger.error(f"Error stopping MongoDB client: {e}")
             raise
+
+    if _sst:
+        _sst = None

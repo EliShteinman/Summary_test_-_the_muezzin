@@ -15,7 +15,7 @@ class WhisperService:
             name=model_name,
             download_root=download_root
         )
-    async def whisper_transcribe(self, file_path, file_hash: str):
+    def whisper_transcribe(self, file_path, file_hash: str):
         audio = whisper.load_audio(file_path)
         audio = whisper.pad_or_trim(audio)
         mel = whisper.log_mel_spectrogram(audio, n_mels=self.model.dims.n_mels).to(self.model.device)
@@ -34,11 +34,9 @@ if __name__ == "__main__":
         download_root=r"C:\models\whisper"
     )
 
-    text, file_hash = asyncio.run(
-            whisper_service.whisper_transcribe(
+    text, file_hash = whisper_service.whisper_transcribe(
             r"C:\podcasts\download (6).wav",
             "jhgyuftydtuyytftrdtr"
-        )
     )
     print(text)
     print(file_hash)
