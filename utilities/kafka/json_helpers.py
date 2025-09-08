@@ -3,8 +3,8 @@
 # ============================================================================
 import json
 import logging
-from typing import Any, Dict, Optional
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +28,15 @@ def serialize_json(data: Any) -> str:
         """סיריאלייזר מותאם אישית"""
         if isinstance(obj, datetime):
             return obj.isoformat()
-        elif hasattr(obj, '__dict__'):
+        elif hasattr(obj, "__dict__"):
             return obj.__dict__
         else:
             return str(obj)
 
     try:
-        return json.dumps(data, default=json_serializer, ensure_ascii=False, indent=None)
+        return json.dumps(
+            data, default=json_serializer, ensure_ascii=False, indent=None
+        )
     except Exception as e:
         logger.error(f"Failed to serialize JSON: {e}")
         raise ValueError(f"JSON serialization failed: {e}")
@@ -67,7 +69,9 @@ def deserialize_json(json_str: str) -> Any:
         raise ValueError(f"JSON deserialization failed: {e}")
 
 
-def create_kafka_message(topic: str, data: Any, key: Optional[str] = None) -> Dict[str, Any]:
+def create_kafka_message(
+    topic: str, data: Any, key: Optional[str] = None
+) -> Dict[str, Any]:
     """
     יצירת הודעת Kafka סטנדרטית עם metadata
 
@@ -82,11 +86,11 @@ def create_kafka_message(topic: str, data: Any, key: Optional[str] = None) -> Di
     timestamp = datetime.now()
 
     return {
-        'topic': topic,
-        'key': key,
-        'data': data,
-        'timestamp': timestamp.isoformat(),
-        'message_id': f"{topic}_{timestamp.timestamp()}",
-        'created_at': timestamp.isoformat(),
-        'version': '1.0'
+        "topic": topic,
+        "key": key,
+        "data": data,
+        "timestamp": timestamp.isoformat(),
+        "message_id": f"{topic}_{timestamp.timestamp()}",
+        "created_at": timestamp.isoformat(),
+        "version": "1.0",
     }

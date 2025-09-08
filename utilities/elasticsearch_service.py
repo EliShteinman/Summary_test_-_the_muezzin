@@ -1,104 +1,88 @@
 import logging
-import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
 
-
 logger = logging.getLogger(__name__)
+
 
 class ElasticsearchService:
     def __init__(self, es: AsyncElasticsearch, index_name: str):
         self.es = es
         self.index_name = index_name
-        
+
     def _create_document_mapping(self) -> Dict[str, Any]:
         """Create optimized mapping for document storage and search"""
         return {
-            'properties': {
-                'file_hash': {
-                    'type': 'keyword',
+            "properties": {
+                "file_hash": {
+                    "type": "keyword",
                 },
-                'file_suffix': {
-                    'type': 'keyword',
+                "file_suffix": {
+                    "type": "keyword",
                 },
-                'file_name': {
-                    'type': 'keyword'
+                "file_name": {"type": "keyword"},
+                "file_size": {"type": "float"},
+                "file_creation_time": {
+                    "type": "timestamp",
                 },
-                'file_size': {
-                    'type': 'float'
+                "file_modification_time": {
+                    "type": "timestamp",
                 },
-                'file_creation_time': {
-                    'type': 'timestamp',
-                },
-                'file_modification_time': {
-                    'type': 'timestamp',
-                },
-                'file_access_time': {
-                    'type': 'timestamp'
-                },
-                'file_permissions': {
-                    'type': 'string'
-                },
+                "file_access_time": {"type": "timestamp"},
+                "file_permissions": {"type": "string"},
             }
         }
-    
-    async def initialize_index(self) -> None:
+
+    async def initialize_index(self, index_name = None) -> None:
         """Initialize the Elasticsearch index with proper mapping"""
+        index_name = index_name or self.index_name
         try:
-            self.es.indices.delete(index=self.index_name, ignore_unavailable=True)
-            if not self.es.indices.exists(index=self.index_name):
-                logger.info(f"Creating index {self.index_name}")
+            self.es.indices.delete(index=index_name, ignore_unavailable=True)
+            if not self.es.indices.exists(index=index_name):
+                logger.info(f"Creating index {index_name}")
                 await self.es.indices.create(
-                    index=self.index_name,
-                    mappings=self._create_document_mapping()
+                    index=self.index_name, mappings=self._create_document_mapping()
                 )
-                logger.info(f"Index {self.index_name} created successfully")
+                logger.info(f"Index {index_name} created successfully")
             else:
-                logger.info(f"Index {self.index_name} already exists")
+                logger.info(f"Index {index_name} already exists")
         except Exception as e:
             logger.error(f"Failed to initialize index: {e}")
             raise
-    
+
     async def create_document(self, document):
         """Create a new document"""
-        doc_id = document['file_hash']
+        doc_id = document["file_hash"]
         now = datetime.now(timezone.utc)
-        
+
         doc_data = document
-        doc_data.update({
-            'created_at': now,
-            'updated_at': now
-        })
+        doc_data.update({"created_at": now, "updated_at": now})
         logger.info(f"Creating document {doc_id}")
         logger.info(f"Document data: {doc_data}")
         try:
-            await self.es.index(
-                index=self.index_name,
-                id=doc_id,
-                body=doc_data
-            )
+            await self.es.index(index=self.index_name, id=doc_id, body=doc_data)
             await self.es.indices.refresh(index=self.index_name)
-            
+
             return await self.get_document(doc_id)
         except Exception as e:
             logger.error(f"Failed to create document: {e}")
             raise
-    
+
     async def get_document(self, doc_id: str):
         """Get a document by ID"""
         try:
             result = await self.es.get(index=self.index_name, id=doc_id)
-            source = result['_source']
+            source = result["_source"]
             return source
         except NotFoundError:
             return None
         except Exception as e:
             logger.error(f"Failed to get document {doc_id}: {e}")
             raise
-    
+
     # async def update_document(self, doc_id: str, update_data):
     #     """Update a document"""
     #     try:

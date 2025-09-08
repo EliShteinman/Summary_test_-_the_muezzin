@@ -1,12 +1,12 @@
 import asyncio
 import logging
-from typing import Any, List, Optional, Callable, Dict
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
-from .json_helpers import serialize_json, deserialize_json, create_kafka_message
+from .json_helpers import create_kafka_message, deserialize_json, serialize_json
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,10 @@ class KafkaProducerAsync:
         self.bootstrap_servers = bootstrap_servers
 
         self._default_config = {
-            'bootstrap_servers': bootstrap_servers,
-            'value_serializer': lambda x: serialize_json(x).encode('utf-8'),
-            'key_serializer': lambda x: x.encode('utf-8') if x else None,
-            'acks': 'all',
+            "bootstrap_servers": bootstrap_servers,
+            "value_serializer": lambda x: serialize_json(x).encode("utf-8"),
+            "key_serializer": lambda x: x.encode("utf-8") if x else None,
+            "acks": "all",
         }
         self._default_config.update(config)
         logger.debug(f"Producer config: {self._default_config}")
@@ -70,7 +70,9 @@ class KafkaProducerAsync:
     async def get_config(self):
         return self._default_config
 
-    async def send_message(self, topic: str, message: Any, key: Optional[str] = None) -> bool:
+    async def send_message(
+        self, topic: str, message: Any, key: Optional[str] = None
+    ) -> bool:
         """
         שליחת הודעה יחידה (אסינכרונית)
 
@@ -100,7 +102,9 @@ class KafkaProducerAsync:
             logger.error(f"Failed to send message to '{topic}': {e}")
             return False
 
-    async def send_batch(self, topic: str, messages: List[Any], keys: Optional[List[str]] = None) -> int:
+    async def send_batch(
+        self, topic: str, messages: List[Any], keys: Optional[List[str]] = None
+    ) -> int:
         """
         שליחת מספר הודעות (אסינכרונית)
 
@@ -133,7 +137,9 @@ class KafkaProducerAsync:
             if result is True:
                 successful_sends += 1
 
-        logger.info(f"Async batch send: {successful_sends}/{len(messages)} messages sent to '{topic}'")
+        logger.info(
+            f"Async batch send: {successful_sends}/{len(messages)} messages sent to '{topic}'"
+        )
         return successful_sends
 
 
@@ -143,11 +149,13 @@ class KafkaConsumerAsync:
     עם 2 מתודות עיקריות: האזנה תמידית וקריאת עדכונים
     """
 
-    def __init__(self,
-                 topics: List[str],
-                 bootstrap_servers: str = "localhost:9092",
-                 group_id: str = "default_group",
-                 **config):
+    def __init__(
+        self,
+        topics: List[str],
+        bootstrap_servers: str = "localhost:9092",
+        group_id: str = "default_group",
+        **config,
+    ):
         """
         יצירת Consumer אסינכרוני
 
@@ -163,11 +171,11 @@ class KafkaConsumerAsync:
         self.last_check_time = None
 
         default_config = {
-            'bootstrap_servers': bootstrap_servers,
-            'group_id': group_id,
-            'value_deserializer': lambda x: deserialize_json(x.decode('utf-8')),
-            'key_deserializer': lambda x: x.decode('utf-8') if x else None,
-            'auto_offset_reset': 'latest'
+            "bootstrap_servers": bootstrap_servers,
+            "group_id": group_id,
+            "value_deserializer": lambda x: deserialize_json(x.decode("utf-8")),
+            "key_deserializer": lambda x: x.decode("utf-8") if x else None,
+            "auto_offset_reset": "latest",
         }
         default_config.update(config)
 
@@ -197,9 +205,11 @@ class KafkaConsumerAsync:
             except Exception as e:
                 logger.error(f"Error stopping Async Consumer: {e}")
 
-    async def listen_forever(self,
-                             message_handler: Callable[[Dict], bool],
-                             max_messages: Optional[int] = None) -> int:
+    async def listen_forever(
+        self,
+        message_handler: Callable[[Dict], bool],
+        max_messages: Optional[int] = None,
+    ) -> int:
         """
         האזנה תמידית להודעות עם callback function (אסינכרונית)
 
@@ -222,13 +232,13 @@ class KafkaConsumerAsync:
                 try:
                     # עיבוד ההודעה
                     message_data = {
-                        'topic': message.topic,
-                        'partition': message.partition,
-                        'offset': message.offset,
-                        'key': message.key,
-                        'value': message.value,
-                        'timestamp': message.timestamp,
-                        'received_at': datetime.now().isoformat()
+                        "topic": message.topic,
+                        "partition": message.partition,
+                        "offset": message.offset,
+                        "key": message.key,
+                        "value": message.value,
+                        "timestamp": message.timestamp,
+                        "received_at": datetime.now().isoformat(),
                     }
 
                     # קריאה אסינכרונית ל-handler
@@ -241,7 +251,9 @@ class KafkaConsumerAsync:
                         processed_count += 1
                         logger.debug(f"Processed message from '{message.topic}'")
                     else:
-                        logger.warning(f"Failed to process message from '{message.topic}'")
+                        logger.warning(
+                            f"Failed to process message from '{message.topic}'"
+                        )
 
                     # בדיקת מגבלת הודעות
                     if max_messages and processed_count >= max_messages:
@@ -283,18 +295,17 @@ class KafkaConsumerAsync:
                 try:
                     # המתנה להודעה עם timeout קצר
                     message = await asyncio.wait_for(
-                        self.consumer.__anext__(),
-                        timeout=1.0
+                        self.consumer.__anext__(), timeout=1.0
                     )
 
                     message_data = {
-                        'topic': message.topic,
-                        'partition': message.partition,
-                        'offset': message.offset,
-                        'key': message.key,
-                        'value': message.value,
-                        'timestamp': message.timestamp,
-                        'received_at': datetime.now().isoformat()
+                        "topic": message.topic,
+                        "partition": message.partition,
+                        "offset": message.offset,
+                        "key": message.key,
+                        "value": message.value,
+                        "timestamp": message.timestamp,
+                        "received_at": datetime.now().isoformat(),
                     }
                     new_messages.append(message_data)
 
@@ -329,13 +340,13 @@ class KafkaConsumerAsync:
         try:
             async for message in self.consumer:
                 yield {
-                    'topic': message.topic,
-                    'partition': message.partition,
-                    'offset': message.offset,
-                    'key': message.key,
-                    'value': message.value,
-                    'timestamp': message.timestamp,
-                    'received_at': datetime.now().isoformat()
+                    "topic": message.topic,
+                    "partition": message.partition,
+                    "offset": message.offset,
+                    "key": message.key,
+                    "value": message.value,
+                    "timestamp": message.timestamp,
+                    "received_at": datetime.now().isoformat(),
                 }
 
         except Exception as e:

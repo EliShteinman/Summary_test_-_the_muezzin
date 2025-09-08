@@ -1,8 +1,9 @@
 # shared-utilities/mongodb/mongodb_async_client.py
 import logging
+from typing import List
+
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,15 @@ class MongoDBAsyncClient:
     async def connect(self):
         """Create async connection to MongoDB."""
         try:
-            self.client = AsyncMongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+            self.client = AsyncMongoClient(
+                self.mongo_uri, serverSelectionTimeoutMS=5000
+            )
             # Test connection
             await self.client.admin.command("ping")
             self.db = self.client[self.db_name]
             self.connected = True
             logger.info("Successfully connected to MongoDB (async)")
-            #await self._setup_indexes()
+            # await self._setup_indexes()
             return True
         except PyMongoError as e:
             logger.error(f"MongoDB async connection failed: {e}")
@@ -56,7 +59,13 @@ class MongoDBAsyncClient:
         return self.db[collection_name]
 
     # RAW ASYNC MOTOR OPERATIONS ONLY
-    async def execute_find(self, collection_name: str, query: dict = None, limit: int = 0, sort: List[tuple] = None):
+    async def execute_find(
+        self,
+        collection_name: str,
+        query: dict = None,
+        limit: int = 0,
+        sort: List[tuple] = None,
+    ):
         """Execute find operation."""
         collection = self.get_collection(collection_name)
         cursor = collection.find(query or {})
@@ -81,7 +90,9 @@ class MongoDBAsyncClient:
         collection = self.get_collection(collection_name)
         return await collection.insert_many(documents, ordered=False)
 
-    async def execute_update_one(self, collection_name: str, filter_query: dict, update_data: dict):
+    async def execute_update_one(
+        self, collection_name: str, filter_query: dict, update_data: dict
+    ):
         """Execute update_one operation."""
         collection = self.get_collection(collection_name)
         return await collection.update_one(filter_query, {"$set": update_data})
