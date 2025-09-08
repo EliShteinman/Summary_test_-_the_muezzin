@@ -1,23 +1,28 @@
 import asyncio
 import logging
-
+import uvicorn
+from pathlib import Path
+from data_load import load_meta_data_for_directory, load_meta_data_for_file
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, status
 import config
 from utilities.kafka.async_client import KafkaProducerAsync
-from data_load import DataLoad
 logging.basicConfig(level=config.LOG_LEVEL)
 logging.getLogger("kafka").setLevel(level=config.LOG_KAFKA)
 logger = logging.getLogger(__name__)
 
+producer: KafkaProducerAsync | None = None
 
-async def main():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global producer
     logger.info("Starting retriever service...")
-    logger.info(
-        f"Initializing Kafka producer - Server: {config.KAFKA_URL}:{config.KAFKA_PORT}"
-    )
-    data_loader = DataLoad()
     boostrap_servers = f"{config.KAFKA_URL}:{config.KAFKA_PORT}"
     producer = KafkaProducerAsync(
         bootstrap_servers=boostrap_servers
+    )
+    logger.info(
+        f"Initializing Kafka producer - {producer.get_config()}"
     )
 
     try:
@@ -25,31 +30,61 @@ async def main():
         logger.info("Kafka producer started successfully")
     except Exception as e:
         logger.error(f"Failed to start Kafka producer: {e}")
-        return
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to start Kafka producer: {e}", )
 
     logger.info("Starting main processing loop...")
 
-    try:
-        for meta_data in data_loader.load_meta_data():
-            result = await producer.send_message(
-                config.KAFKA_OUTPUT_TOPIC, meta_data
-            )
-            logger.debug(f"Message sent: {result}")
-        await asyncio.sleep(1)
+    yield
 
+    logger.info("Application shutdown...")
+    try:
+        pass
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+
+app = FastAPI(
+    lifespan=lifespan,
+    title="Podcast Retriever API",
+    version="1.0",
+    description="API for retrieving podcasts",
+)
+
+
+@app.get("/")
+async def root():
+    return {"message": "Podcast Retriever API"}
+
+
+@app.get("/load_file/{file_path}")
+async def load_file(file_path: Path):
+    logger.info(f"Loading file: {file_path}")
+    try:
+        logger.info(Path(file_path))
+        meta_data = load_meta_data_for_file(file_path)
+        await producer.send_message(
+            config.KAFKA_OUTPUT_TOPIC, meta_data
+        )
+        return {"status": "success"}
     except Exception as e:
         logger.error(f"Error in main loop: {e}")
+        return {"status": "error"}
 
 
 
-
+@app.get("/load_directory/{directory_path}")
+async def load_directory(directory_path: Path):
+    logger.info(f"Loading directory: {directory_path}")
+    try:
+        for meta_data in load_meta_data_for_directory(directory_path):
+            await producer.send_message(
+                config.KAFKA_OUTPUT_TOPIC, meta_data
+            )
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error in main loop: {e}")
+        return {"status": "error"}
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Retriever service stopped by user")
-    except Exception as e:
-        logger.critical(f"Critical error in main: {e}")
-        raise
-    # main()
+    uvicorn.run(app=app, host="0.0.0.0", port=8000)
