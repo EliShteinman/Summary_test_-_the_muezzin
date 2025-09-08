@@ -1,7 +1,6 @@
 aiohttp
 whisper
 openai-whisper
-gridfs
 aiokafka
 pymongo
 elasticsearch
