@@ -7,6 +7,7 @@ from logger import Logger
 import config
 from utilities.elasticsearch_service import ElasticsearchService
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
+from gridfs.asynchronous import AsyncGridFS
 
 logger = Logger.get_logger()
 
@@ -23,6 +24,7 @@ class Proses:
             self.db, bucket_name=config.MONGO_COLLECTION_NAME
         )
         self.collection = self.mongodb.get_collection(config.MONGO_COLLECTION_NAME)
+        self.fs = AsyncGridFS(self.db, collection=config.MONGO_COLLECTION_NAME)
 
     async def proses(self, data: dict):
         path = data["file_path"]
@@ -56,7 +58,5 @@ class Proses:
             return f"An error occurred: {e}"
 
     async def upload_file(self, file_path, file_hash, meta_data):
-        async with self.bucket.open_upload_stream(
-            filename=file_hash, chunk_size_bytes=1048576, metadata=meta_data
-        ) as grid_in:
-            await grid_in.write(open(file_path, "rb"))
+        await self.fs.put(open(file_path, "rb"), _id=file_hash, metadata=meta_data)
+        return await self.fs.find_one({"_id": file_hash})
