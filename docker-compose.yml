@@ -1,5 +1,14 @@
+# שם הדוקר קומפוז שיופיע בדוקר
 name: Summary_test_-_the_muezzin
+
+# רשימת הקונטיינרים שרצים
 services:
+  # הקונטיינר עבור אלסטיק
+  # ניגשים אליו כך
+  # בלוקאל הוסט.
+  # http://localhost:9200
+  # בתוך הרשת של דוקר
+  # http://elasticsearch:9200
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
     restart: unless-stopped
@@ -7,7 +16,7 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
+    volumes: # במידה ורוציה שלא ישמור מידע בין הרצות למחוק קטע זה
       - elasticsearch_data_newsgroups:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
@@ -20,6 +29,7 @@ services:
       retries: 5
       start_period: 60s
 
+  # קיבנה הUI של אלסטיק
   kibana:
     image: docker.elastic.co/kibana/kibana:9.1.2
     restart: unless-stopped
@@ -38,6 +48,7 @@ services:
       retries: 5
       start_period: 60s
 
+  # מכונה נצרכת עבור קפקא
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
@@ -47,7 +58,13 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  broker:
+  # קפקא עצמו
+  # מאזין כמו האלסטיק לשני כתובות
+  # לדברים שרצים לוקאלית על המחשב
+  # localhost:9092
+  # לקונטיינרים ברשת הפנימית ל מונגו
+  # broker:9093
+  broker: #
     image: confluentinc/cp-kafka:7.2.15
     container_name: broker
     networks:
@@ -70,6 +87,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_L:PLAINTEXT,PLAINTEXT_C:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
 
+  # קפקא UI זמינה בכתובת הבאה
+  # http://localhost:7777
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -85,10 +104,16 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:9093
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
 
+  # מונגו נגיש בכתובות הבאות
+  # http://localhost:27017
+  # http://mongodb:27017
   mongodb:
     image: mongo:latest
     restart: unless-stopped
     environment:
+      # מונגו עולה עם שם משתמש וסיסמה
+      # ניתן למחוק זאת וכך הוא יהיה נגיש תמיד
+      # שימו לב בעת מחיקה יש למחוק גם ממכונת הUI את ההגדרה
       MONGO_INITDB_ROOT_USERNAME: "admin"
       MONGO_INITDB_ROOT_PASSWORD: "admin123456"
     volumes:
@@ -102,7 +127,7 @@ services:
       interval: 20s
       timeout: 10s
       retries: 10
-
+  # מונגו UI
   mongo-express:
     image: mongo-express:latest
     restart: unless-stopped
@@ -113,26 +138,13 @@ services:
     environment:
       ME_CONFIG_MONGODB_SERVER: "mongodb"
       ME_CONFIG_MONGODB_PORT: "27017"
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "admin123456"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "admin" # שם משתמש במידה והוגדר
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "admin123456" # סיסמה במידה והוגדרה
       ME_CONFIG_BASICAUTH: "false"
     networks:
       - elastic_kafka
-
-
-
-volumes:
-  elasticsearch_data_newsgroups:
-  mongodb_data:
-
-networks:
-  elastic_kafka:
-    driver: bridge
-
-
-
-
-
+#כאן ניתן להגדיר כל קונטיינר שתרצו שיהיה שייך לאותו רשת
+# זה דוגמא להגדרות קונטיינר
   #  newsgroups:
   #    build:
   #      context: dal
@@ -156,3 +168,13 @@ networks:
   #        timeout: 10s
   #        retries: 5
   #        start_period: 60s
+
+# הגדרות הווליום
+volumes:
+  elasticsearch_data_newsgroups:
+  mongodb_data:
+
+# הגדרות הרשת
+networks:
+  elastic_kafka:
+    driver: bridge
