@@ -27,15 +27,15 @@ class KafkaProducerAsync:
         """
         self.bootstrap_servers = bootstrap_servers
 
-        default_config = {
+        self._default_config = {
             'bootstrap_servers': bootstrap_servers,
             'value_serializer': lambda x: serialize_json(x).encode('utf-8'),
             'key_serializer': lambda x: x.encode('utf-8') if x else None,
             'acks': 'all',
         }
-        default_config.update(config)
-        logger.debug(f"Producer config: {default_config}")
-        self.producer = AIOKafkaProducer(**default_config)
+        self._default_config.update(config)
+        logger.debug(f"Producer config: {self._default_config}")
+        self.producer = AIOKafkaProducer(**self._default_config)
         logger.debug("Producer created")
 
         self.is_started = False
@@ -66,6 +66,9 @@ class KafkaProducerAsync:
                 logger.info("Async Kafka Producer stopped")
             except Exception as e:
                 logger.error(f"Error stopping Async Producer: {e}")
+
+    async def get_config(self):
+        return self._default_config
 
     async def send_message(self, topic: str, message: Any, key: Optional[str] = None) -> bool:
         """
