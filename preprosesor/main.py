@@ -1,31 +1,34 @@
 import asyncio
 import logging
+
+from elasticsearch import AsyncElasticsearch
+
 import config
 from preprosesor.proses import Proses
-from elasticsearch import AsyncElasticsearch
-from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.elasticsearch_service import ElasticsearchService
+from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
-
 logging.basicConfig(level=config.LOG_LEVEL)
+
+# set logging level for third-party libraries
 logging.getLogger("pymongo").setLevel(level=config.LOG_MONGO)
 logging.getLogger("kafka").setLevel(level=config.LOG_KAFKA)
+
 logger = logging.getLogger(__name__)
 
 
 async def main(
-        boostrap_servers: str,
-        topics: list,
-        group_id: str,
-        mongo_uri: str,
-        mongo_db_name: str,
-        collections_name: str,
-        es_url: str,
-        es_index: str,
+    boostrap_servers: str,
+    topics: list,
+    group_id: str,
+    mongo_uri: str,
+    mongo_db_name: str,
+    collections_name: str,
+    es_url: str,
+    es_index: str,
 ):
     logger.info("Starting persister service")
-
 
     consumer = KafkaConsumerAsync(
         topics=topics,
@@ -46,7 +49,6 @@ async def main(
 
     proses = Proses(mongo_service, es_services)
 
-
     try:
         await consumer.start()
         logger.info("Kafka consumer started successfully")
@@ -62,7 +64,7 @@ async def main(
                 async for data in consumer.consume():
                     try:
                         logger.info(f"Processing podcast: {data['value']['data']}")
-                        result = await proses.proses(data['value']['data'])
+                        result = await proses.proses(data["value"]["data"])
                         logger.info(f"Podcast processed: {result}")
                     except Exception as e:
                         logger.error(f"Error processing podcast: {e}")
@@ -99,12 +101,6 @@ if __name__ == "__main__":
         es_url = f"{es_protocol}://{es_host}:{es_port}"
         es_index = config.ELASTICSEARCH_INDEX
 
-
-
-
-
-
-
         asyncio.run(
             main(
                 boostrap_servers,
@@ -114,7 +110,7 @@ if __name__ == "__main__":
                 mongo_db_name,
                 collections_name,
                 es_url,
-                es_index
+                es_index,
             )
         )
     except Exception as e:
