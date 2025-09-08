@@ -5,7 +5,7 @@ from preprosesor.proses import Proses
 from elasticsearch import AsyncElasticsearch
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.elasticsearch_service import ElasticsearchService
-from utilities.mongo_utils import SingletonMongoClient
+from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
 
 logging.basicConfig(level=config.LOG_LEVEL)
@@ -33,19 +33,18 @@ async def main(
         group_id=group_id,
     )
 
-    mongo_client = SingletonMongoClient(
+    mongo_service = MongoDBAsyncClient(
         mongo_uri,
         mongo_db_name,
-        collections_name
     )
-    await mongo_client.connect_and_verify()
+    await mongo_service.connect()
     logger.info("Connected to MongoDB")
     es_client = AsyncElasticsearch(es_url)
     es_services = ElasticsearchService(es_client, es_index)
     await es_services.initialize_index()
     logger.info("Elasticsearch index initialized")
 
-    proses = Proses(mongo_client, es_services)
+    proses = Proses(mongo_service, es_services)
 
 
     try:
@@ -62,10 +61,11 @@ async def main(
             try:
                 async for data in consumer.consume():
                     try:
-                        result = await proses.proses(data)
+                        logger.info(f"Processing podcast: {data['value']['data']}")
+                        result = await proses.proses(data['value']['data'])
                         logger.info(f"Podcast processed: {result}")
                     except Exception as e:
-                        logger.error(f"Failed to insert tweet from topic {data['topic']}: {e}")
+                        logger.error(f"Error processing podcast: {e}")
                         continue
 
             except Exception as e:

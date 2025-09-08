@@ -40,7 +40,7 @@ class ElasticsearchService:
                     'type': 'timestamp'
                 },
                 'file_permissions': {
-                    'type': 'timestamp'
+                    'type': 'string'
                 },
             }
         }
@@ -48,6 +48,7 @@ class ElasticsearchService:
     async def initialize_index(self) -> None:
         """Initialize the Elasticsearch index with proper mapping"""
         try:
+            self.es.indices.delete(index=self.index_name, ignore_unavailable=True)
             if not self.es.indices.exists(index=self.index_name):
                 logger.info(f"Creating index {self.index_name}")
                 await self.es.indices.create(
@@ -63,15 +64,16 @@ class ElasticsearchService:
     
     async def create_document(self, document):
         """Create a new document"""
-        doc_id = str(uuid.uuid4())
+        doc_id = document['file_hash']
         now = datetime.now(timezone.utc)
         
-        doc_data = document.dict()
+        doc_data = document
         doc_data.update({
             'created_at': now,
             'updated_at': now
         })
-        
+        logger.info(f"Creating document {doc_id}")
+        logger.info(f"Document data: {doc_data}")
         try:
             await self.es.index(
                 index=self.index_name,
