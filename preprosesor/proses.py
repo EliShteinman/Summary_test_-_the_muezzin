@@ -6,7 +6,7 @@ from gridfs import AsyncGridFSBucket
 from gridfs.asynchronous import AsyncGridFS
 
 import config
-from utilities.elasticsearch_service import ElasticsearchService
+from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
 from utilities.logger import Logger
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 

@@ -44,7 +44,7 @@ if __name__ == "__main__":
     )
 
     result = whisper_service.whisper_transcribe(
-            r"C:\podcasts\download (6).wav",
+            r"C:\podcasts\download (18).wav",
             "jhgyuftydtuyytftrdtr"
     )
-    pprint(result.keys())
+    pprint(result['full_text'])

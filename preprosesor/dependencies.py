@@ -4,7 +4,7 @@ from typing import Optional
 from elasticsearch import AsyncElasticsearch
 
 import config
-from utilities.elasticsearch_service import ElasticsearchService
+from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.logger import Logger
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
