@@ -7,3 +7,4 @@ pymongo
 elasticsearch
 uvicorn
 ffmpeg-python
+pandas

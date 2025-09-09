@@ -1,0 +1,129 @@
+{
+  "properties": {
+    "contentType": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "file_access_time": {
+      "type": "date"
+    },
+    "file_creation_time": {
+      "type": "date"
+    },
+    "file_hash": {
+      "type": "keyword"
+    },
+    "file_modification_time": {
+      "type": "date"
+    },
+    "file_name": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "file_size": {
+      "type": "long"
+    },
+    "file_suffix": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "full_text": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "language": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "segments": {
+      "properties": {
+        "avg_logprob": {
+          "type": "float"
+        },
+        "compression_ratio": {
+          "type": "float"
+        },
+        "end": {
+          "type": "float"
+        },
+        "id": {
+          "type": "long"
+        },
+        "no_speech_prob": {
+          "type": "float"
+        },
+        "seek": {
+          "type": "long"
+        },
+        "start": {
+          "type": "float"
+        },
+        "temperature": {
+          "type": "float"
+        },
+        "text": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "tokens": {
+          "type": "long"
+        },
+        "words": {
+          "properties": {
+            "end": {
+              "type": "float"
+            },
+            "probability": {
+              "type": "float"
+            },
+            "start": {
+              "type": "float"
+            },
+            "word": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "updated_at": {
+      "type": "date"
+    }
+  }
+}

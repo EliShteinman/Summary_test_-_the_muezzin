@@ -8,7 +8,7 @@ import config
 from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.logger import Logger
-
+from utilities.files.data_loader_client import UniversalDataLoader
 logger = Logger.get_logger()
 
 
@@ -28,10 +28,25 @@ async def main():
     except Exception as e:
         logger.error(f"Failed to start Kafka: {e}")
         return
+    dal = UniversalDataLoader()
+    try:
+        mapping = dal.load_json_as_dict(
+            r'mapping.json'
+        )
+    except Exception as e:
+        logger.error(f"Failed to load mapping: {e}")
+        return
 
-    es_url = f"{config.INDEXER_ELASTICSEARCH_PROTOCOL}://{config.INDEXER_ELASTICSEARCH_HOST}:{config.INDEXER_ELASTICSEARCH_PORT}"
-    es_client = AsyncElasticsearch(es_url)
-    es = ElasticsearchService(es_client, config.INDEXER_ELASTICSEARCH_INDEX_DATA)
+    try:
+        es_url = f"{config.INDEXER_ELASTICSEARCH_PROTOCOL}://{config.INDEXER_ELASTICSEARCH_HOST}:{config.INDEXER_ELASTICSEARCH_PORT}"
+        es_client = AsyncElasticsearch(es_url)
+        es = ElasticsearchService(es_client, config.INDEXER_ELASTICSEARCH_INDEX_DATA)
+        await es.initialize_index(mapping=mapping)
+        logger.info("Elasticsearch client initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Elasticsearch client: {e}")
+        return
+
     ind = Index(es)
 
     # Performance tracking variables
@@ -57,7 +72,12 @@ async def main():
 
                 # Track processing time for each message
                 process_start_time = time.time()
-                result = await ind.index_document(file, key)
+                try:
+                    result = await ind.index_document(file, key)
+                    logger.debug(f"Result: {result}")
+                except Exception as e:
+                    logger.error(f"Error indexing document: {e}")
+                    logger.info(f"Failed to index document {file_id}")
                 processing_time = time.time() - process_start_time
                 logger.debug(f"Result: {result}")
                 logger.info(f"Processed file {file_id} in {processing_time:.3f}s")

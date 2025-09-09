@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pprint
 
@@ -33,15 +33,9 @@ def load_meta_data_for_file(file_path):
                 "file_suffix": file.suffix.replace(".", ""),
                 "file_name": file.stem,
                 "file_size": file.stat().st_size,
-                "file_creation_time": datetime.fromtimestamp(
-                    file.stat().st_ctime
-                ).strftime("%Y-%m-%d %H:%M:%S"),
-                "file_modification_time": datetime.fromtimestamp(
-                    file.stat().st_mtime
-                ).strftime("%Y-%m-%d %H:%M:%S"),
-                "file_access_time": datetime.fromtimestamp(
-                    file.stat().st_atime
-                ).strftime("%Y-%m-%d %H:%M:%S"),
+                "file_creation_time": datetime.fromtimestamp(file.stat().st_ctime, timezone.utc),
+                "file_modification_time": datetime.fromtimestamp(file.stat().st_mtime, timezone.utc),
+                "file_access_time": datetime.fromtimestamp(file.stat().st_atime, timezone.utc),
             },
         }
         logger.debug(f"Metadata loaded from {file} : {meta_data}")

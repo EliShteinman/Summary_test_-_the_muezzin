@@ -17,36 +17,153 @@ class ElasticsearchService:
         """Create optimized mapping for document storage and search"""
         return {
             "properties": {
-                "file_hash": {
-                    "type": "keyword",
+                "contentType": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
                 },
-                "file_suffix": {
-                    "type": "keyword",
+                "file_access_time": {
+                    "type": "time"
                 },
-                "file_name": {"type": "keyword"},
-                "file_size": {"type": "float"},
                 "file_creation_time": {
-                    "type": "timestamp",
+                    "type": "time"
+                },
+                "file_hash": {
+                    "type": "keyword"
                 },
                 "file_modification_time": {
-                    "type": "timestamp",
+                    "type": "date"
                 },
-                "file_access_time": {"type": "timestamp"},
-                "file_permissions": {"type": "string"},
+                "file_name": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "file_size": {
+                    "type": "long"
+                },
+                "file_suffix": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "full_text": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "language": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "segments": {
+                    "properties": {
+                        "avg_logprob": {
+                            "type": "float"
+                        },
+                        "compression_ratio": {
+                            "type": "float"
+                        },
+                        "end": {
+                            "type": "float"
+                        },
+                        "id": {
+                            "type": "long"
+                        },
+                        "no_speech_prob": {
+                            "type": "float"
+                        },
+                        "seek": {
+                            "type": "long"
+                        },
+                        "start": {
+                            "type": "float"
+                        },
+                        "temperature": {
+                            "type": "float"
+                        },
+                        "text": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "tokens": {
+                            "type": "long"
+                        },
+                        "words": {
+                            "properties": {
+                                "end": {
+                                    "type": "float"
+                                },
+                                "probability": {
+                                    "type": "float"
+                                },
+                                "start": {
+                                    "type": "float"
+                                },
+                                "word": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "updated_at": {
+                    "type": "date"
+                }
             }
         }
 
-    async def initialize_index(self, index_name=None) -> None:
+    async def initialize_index(self, index_name: str = None, mapping: dict = None) -> None:
         """Initialize the Elasticsearch index with proper mapping"""
         index_name = index_name or self.index_name
         try:
             await self.es.indices.delete(index=index_name, ignore_unavailable=True)
-            if not self.es.indices.exists(index=index_name):
+            index_exists = await self.es.indices.exists(index=index_name)
+            if not index_exists:
                 logger.info(f"Creating index {index_name}")
-                await self.es.indices.create(
-                    index=self.index_name, mappings=self._create_document_mapping()
-                )
-                logger.info(f"Index {index_name} created successfully")
+                if mapping:
+                    await self.es.indices.create(
+                        index=self.index_name, mappings=mapping
+                    )
+                    logger.info(f"Index {index_name} created successfully")
+                    logger.debug(f"Mapping: {mapping}")
+                else:
+                    await self.es.indices.create(
+                        index=self.index_name
+                    )
+                    logger.info(f"Index {index_name} created successfully with default mapping")
             else:
                 logger.info(f"Index {index_name} already exists")
         except Exception as e:
@@ -95,7 +212,7 @@ class ElasticsearchService:
                 id=doc_id,
                 body={"doc": update_dict, "doc_as_upsert": True},
             )
-            self.es.indices.refresh(index=self.index_name)
+            await self.es.indices.refresh(index=self.index_name)
 
             return await self.get_document(doc_id)
         except NotFoundError:
