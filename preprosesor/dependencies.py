@@ -1,4 +1,4 @@
-from logger import Logger
+from utilities.logger import Logger
 import logging
 from typing import Optional
 
@@ -8,7 +8,7 @@ import config
 from utilities.elasticsearch_service import ElasticsearchService
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
-from utilities.stt import WhisperService
+from utilities.sst.whisper_service import WhisperService
 
 # set logging level for third-party libraries
 logging.getLogger("pymongo").setLevel(level=config.LOG_MONGO)

@@ -45,3 +45,13 @@ DEFAULT_SUBSET = os.getenv("DEFAULT_SUBSET", "train")
 MAX_BULK_SIZE = int(os.getenv("MAX_BULK_SIZE", 1000))
 DEFAULT_SEARCH_LIMIT = int(os.getenv("DEFAULT_SEARCH_LIMIT", 10))
 MAX_SEARCH_LIMIT = int(os.getenv("MAX_SEARCH_LIMIT", 100))
+
+
+# ----------------------------------------------
+# transparency_recording
+
+TR_KAFKA_HOST = os.getenv("TR_KAFKA_HOST", "localhost")
+TR_KAFKA_PORT = int(os.getenv("TR_KAFKA_PORT", 9092))
+TR_KAFKA_TOPIC_IN = os.getenv("TR_KAFKA_TOPIC_IN", "Transcription_file")
+TR_KAFKA_TOPIC_OUT = os.getenv("TR_KAFKA_TOPIC_OUT", "Transcription")
+TR_KAFKA_GROUP_ID = os.getenv("TR_KAFKA_GROUP_ID", "Transcription_group")

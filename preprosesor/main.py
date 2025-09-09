@@ -1,7 +1,7 @@
 import asyncio
 from time import sleep
 
-from logger import Logger
+from utilities.logger import Logger
 
 from dependencies import (get_consumer, get_es, get_mongo, set_consumer,
                           set_es, set_mongo)

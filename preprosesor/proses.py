@@ -3,11 +3,10 @@ from typing import Optional
 
 from dependencies import get_es, get_mongo
 from gridfs import AsyncGridFSBucket
-from logger import Logger
+from utilities.logger import Logger
 import config
 from utilities.elasticsearch_service import ElasticsearchService
 from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
-from utilities.stt import WhisperService
 from gridfs.asynchronous import AsyncGridFS
 
 logger = Logger.get_logger()
