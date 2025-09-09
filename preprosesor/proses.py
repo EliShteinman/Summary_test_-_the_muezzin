@@ -1,32 +1,15 @@
 import hashlib
-from typing import Optional
-
-from dependencies import get_es, get_mongo
-from gridfs import AsyncGridFSBucket
-from gridfs.asynchronous import AsyncGridFS
 
 import config
-from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
+from utilities.kafka.async_client import KafkaProducerAsync
 from utilities.logger import Logger
-from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
 logger = Logger.get_logger()
 
 
 class Proses:
-    def __init__(
-        self,
-        mongo_service: Optional[MongoDBAsyncClient] = None,
-        elasticsearch: Optional[ElasticsearchService] = None,
-    ):
-        self.mongodb = mongo_service or get_mongo()
-        self.elastic = elasticsearch or get_es()
-        self.db = self.mongodb.get_db()
-        self.bucket = AsyncGridFSBucket(
-            self.db, bucket_name=config.MONGO_COLLECTION_NAME
-        )
-        self.collection = self.mongodb.get_collection(config.MONGO_COLLECTION_NAME)
-        self.fs = AsyncGridFS(self.db, collection=config.MONGO_COLLECTION_NAME)
+    def __init__(self, producer: KafkaProducerAsync):
+        self.producer = producer
 
     async def proses(self, data: dict):
         path = data["file_path"]
@@ -34,12 +17,25 @@ class Proses:
         file_hash = self._get_file_hash(path)
         meta_data["file_hash"] = file_hash
         meta_data["contentType"] = f"audio/{meta_data['file_suffix']}"
-        logger.debug(f"meta_data: {meta_data}")
-        await self.elastic.create_document(meta_data)
-        logger.debug(f"File {path} uploaded successfully")
-        logger.debug(f"File hash: {file_hash}")
-        await self.upload_file(path, file_hash, meta_data)
-        return meta_data
+        result_es = await self.producer.send_message(
+            topic=config.PREPROCESSOR_KAFKA_TOPIC_OUT_TO_INDEX,
+            key=file_hash,
+            message=meta_data,
+        )
+        logger.debug(f"result_es: {result_es}")
+        result_mongo = await self.producer.send_message(
+            topic=config.PREPROCESSOR_KAFKA_TOPIC_OUT_TO_STORAGE,
+            key=file_hash,
+            message=path,
+        )
+        logger.debug(f"result_mongo: {result_mongo}")
+        result_transcription = await self.producer.send_message(
+            topic=config.PREPROCESSOR_KAFKA_TOPIC_OUT_TO_TRANSCRIPTION,
+            key=file_hash,
+            message=path,
+        )
+        logger.debug(f"result_transcription: {result_transcription}")
+        return result_es, result_mongo, result_transcription
 
     @staticmethod
     def _get_file_hash(file_path, algorithm="sha256", buffer_size=65536):
@@ -58,7 +54,3 @@ class Proses:
             return f"Error: File not found at {file_path}"
         except Exception as e:
             return f"An error occurred: {e}"
-
-    async def upload_file(self, file_path, file_hash, meta_data):
-        await self.fs.put(open(file_path, "rb"), _id=file_hash, metadata=meta_data)
-        return await self.fs.find_one({"_id": file_hash})
