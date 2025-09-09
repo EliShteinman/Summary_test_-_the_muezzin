@@ -43,7 +43,9 @@ async def main():
 
     encodings = Encoding()
     hostile = encodings.decode_base64(config.ANALYZER_HOSTILE_WORDS)
+    hostile = hostile.split(",")
     less_hostile = encodings.decode_base64(config.ANALYZER_LESS_HOSTILE_WORDS)
+    less_hostile = less_hostile.split(",")
 
     analysis = Analysis(
         producer,
@@ -60,22 +62,25 @@ async def main():
         try:
             async for data in consumer.consume():
                 logger.debug(f"Received data: {data}")
-                # topic = data["topic"]
-                # key = data["key"]
-                # path = data['value']['data']
+                topic = data["topic"]
+                key = data["key"]
+                data = data['value']
                 message_count += 1
                 processed_in_batch += 1
 
-                # logger.debug(
-                #     f"Processing message #{message_count} from topic '{topic}'"
-                # )
+                logger.debug(
+                    f"Processing message #{message_count} from topic '{topic}'"
+                )
 
                 # Track processing time for each message
                 process_start_time = time.time()
-                result = analysis.analysis(data)
+                result = analysis.analysis(
+                    data=data,
+                    key=key,
+                )
                 processing_time = time.time() - process_start_time
                 logger.debug(f"Result: {result}")
-                # logger.info(f"Processed file {key} in {processing_time:.3f}s")
+                logger.info(f"Processed file {key} in {processing_time:.3f}s")
 
                 # Print statistics every 60 seconds
                 current_time = time.time()

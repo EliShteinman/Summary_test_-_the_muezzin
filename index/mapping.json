@@ -124,6 +124,15 @@
     },
     "updated_at": {
       "type": "date"
+    },
+    "is_bds" : {
+      "type": "boolean"
+    },
+    "bds_percent" : {
+        "type": "float"
+    },
+    "bsd_threat_level" : {
+      "type": "keyword"
     }
   }
 }
