@@ -10,7 +10,7 @@ logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting retriever service...")
+    logger.info("Starting service...")
     bootstrap_servers = (
         f"{config.PREPROCESSOR_KAFKA_HOST}:{config.PREPROCESSOR_KAFKA_PORT}"
     )

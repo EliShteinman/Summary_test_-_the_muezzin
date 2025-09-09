@@ -2,30 +2,35 @@ import asyncio
 import time
 
 import config
+from transparency import Transparency
 from utilities.kafka.async_client import KafkaConsumerAsync, KafkaProducerAsync
+from utilities.sst.whisper_service import WhisperService
 from utilities.logger import Logger
 
 logger = Logger.get_logger()
 
 
 async def main():
-    """
-    Main function to start the retriever service.
-    Sets up Kafka producer/consumer and starts processing loop.
-    """
-    logger.info("Starting retriever service...")
-    logger.info("RetrieverData service initialized")
+    logger.info("Starting service...")
+    bootstrap_servers = (
+        f"{config.PREPROCESSOR_KAFKA_HOST}:{config.PREPROCESSOR_KAFKA_PORT}"
+    )
 
-    # Initialize Kafka connections
-    logger.info(
-        f"Initializing Kafka producer - Server: {config.KAFKA_URL}:{config.KAFKA_PORT}"
-    )
+    # Initialize Kafka producer and consumer
     producer = KafkaProducerAsync(
-        bootstrap_servers=f"{config.KAFKA_URL}:{config.KAFKA_PORT}"
+        bootstrap_servers=bootstrap_servers,
     )
+
+    try:
+        await producer.start()
+        logger.info("Kafka producer and consumer started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start Kafka: {e}")
+        return
+
     consumer = KafkaConsumerAsync(
         [config.TR_KAFKA_TOPIC_IN],
-        bootstrap_servers=f"{config.TR_KAFKA_HOST}:{config.TR_KAFKA_PORT}",
+        bootstrap_servers=bootstrap_servers,
         group_id=config.TR_KAFKA_GROUP_ID,
     )
 
@@ -37,54 +42,65 @@ async def main():
         logger.error(f"Failed to start Kafka: {e}")
         return
 
-    logger.info(f"Starting to consume from topics: {config.TR_KAFKA_TOPIC_IN}")
-    logger.info("Starting main processing loop...")
+    sst = WhisperService(
+        model_name=config.TR_MODEL_NAME,
+        download_root=config.TR_DOWNLOAD_ROOT,
+    )
+    tr = Transparency(
+        sst=sst,
+        producer=producer,
+    )
 
-    # # Performance tracking variables
-    # message_count = 0
-    # start_time = time.time()
-    # processed_in_batch = 0
-    # last_stats_time = time.time()
-    #
-    # while True:
-    #     try:
-    #         async for topic, tweet in consumer.consume():
-    #             message_count += 1
-    #             processed_in_batch += 1
-    #             tweet_id = tweet.get("_id", "unknown_id")
-    #
-    #             logger.debug(
-    #                 f"Processing message #{message_count} from topic '{topic}' - Tweet ID: {tweet_id}"
-    #             )
-    #
-    #             # Track processing time for each message
-    #             process_start_time = time.time()
-    #             result = await enricher.process_and_send_tweet(topic, tweet)
-    #             processing_time = time.time() - process_start_time
-    #
-    #             logger.info(f"Processed tweet {tweet_id} in {processing_time:.3f}s")
-    #
-    #             # Print statistics every 60 seconds
-    #             current_time = time.time()
-    #             if current_time - last_stats_time > 60:
-    #                 rate = processed_in_batch / 60
-    #                 logger.info(
-    #                     f"Processing rate: {rate:.2f} messages/second | Total processed: {message_count}"
-    #                 )
-    #
-    #                 last_stats_time = current_time
-    #                 processed_in_batch = 0
-    #
-    #             # Log every 100 messages for general tracking
-    #             if message_count % 100 == 0:
-    #                 logger.info(f"Milestone: Processed {message_count} total messages")
-    #
-    #     except Exception as e:
-    #         logger.error(f"Error consuming messages from Kafka: {e}")
-    #
-    #     # Sleep between batches to prevent overwhelming the system
-    #     await asyncio.sleep(5)
-    #
+    # Performance tracking variables
+    message_count = 0
+    processed_in_batch = 0
+    last_stats_time = time.time()
+
+    while True:
+        try:
+            async for data in consumer.consume():
+                logger.debug(f"Received data: {data}")
+                topic = data.topic
+                key = data.key
+                path = data.value.get("file_path")
+                message_count += 1
+                processed_in_batch += 1
+
+                logger.debug(
+                    f"Processing message #{message_count} from topic '{topic}'"
+                )
+
+                # Track processing time for each message
+                process_start_time = time.time()
+                result = await tr.transcribe(
+                    file_path=path,
+                    file_hash=key,
+                )
+                processing_time = time.time() - process_start_time
+                logger.debug(f"Result: {result}")
+                logger.info(f"Processed file {key} in {processing_time:.3f}s")
+
+                # Print statistics every 60 seconds
+                current_time = time.time()
+                if current_time - last_stats_time > 60:
+                    rate = processed_in_batch / 60
+                    logger.info(
+                        f"Processing rate: {rate:.2f} messages/second | Total processed: {message_count}"
+                    )
+
+                    last_stats_time = current_time
+                    processed_in_batch = 0
+
+                # Log every 100 messages for general tracking
+                if message_count % 100 == 0:
+                    logger.info(f"Milestone: Processed {message_count} total messages")
+
+        except Exception as e:
+            logger.error(f"Error consuming messages from Kafka: {e}")
+
+        # Sleep between batches to prevent overwhelming the system
+        await asyncio.sleep(5)
+
 
 
 if __name__ == "__main__":

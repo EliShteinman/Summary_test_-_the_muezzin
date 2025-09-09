@@ -6,8 +6,11 @@ import os
 TR_KAFKA_HOST = os.getenv("TR_KAFKA_HOST", "localhost")
 TR_KAFKA_PORT = int(os.getenv("TR_KAFKA_PORT", 9092))
 TR_KAFKA_TOPIC_IN = os.getenv("TR_KAFKA_TOPIC_IN", "Transcription_file")
-TR_KAFKA_TOPIC_OUT = os.getenv("TR_KAFKA_TOPIC_OUT", "Transcription")
+TR_KAFKA_TOPIC_OUT = os.getenv("TR_KAFKA_TOPIC_OUT", "to_index")
 TR_KAFKA_GROUP_ID = os.getenv("TR_KAFKA_GROUP_ID", "Transcription_group")
+
+TR_MODEL_NAME = os.getenv("TR_MODEL_NAME", "tiny")
+TR_DOWNLOAD_ROOT = os.getenv("TR_DOWNLOAD_ROOT", "C:\models\whisper")
 
 
 # -----------------------------------------------
@@ -74,6 +77,7 @@ INDEXER_KAFKA_HOST = os.getenv("INDEXER_KAFKA_HOST", "localhost")
 INDEXER_KAFKA_PORT = int(os.getenv("INDEXER_KAFKA_PORT", 9092))
 INDEXER_KAFKA_TOPIC_IN = os.getenv("INDEXER_KAFKA_TOPIC_IN", "to_index")
 INDEXER_KAFKA_GROUP_ID = os.getenv("INDEXER_KAFKA_GROUP_ID", "indexer_group")
+
 ## Elasticsearch Configuration
 INDEXER_ELASTICSEARCH_PROTOCOL = os.getenv("INDEXER_ELASTICSEARCH_PROTOCOL", "http")
 INDEXER_ELASTICSEARCH_HOST = os.getenv("INDEXER_ELASTICSEARCH_HOST", "localhost")
