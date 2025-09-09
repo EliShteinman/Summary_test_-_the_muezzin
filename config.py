@@ -6,7 +6,7 @@ import os
 TR_KAFKA_HOST = os.getenv("TR_KAFKA_HOST", "localhost")
 TR_KAFKA_PORT = int(os.getenv("TR_KAFKA_PORT", 9092))
 TR_KAFKA_TOPIC_IN = os.getenv("TR_KAFKA_TOPIC_IN", "Transcription_file")
-TR_KAFKA_TOPIC_OUT = os.getenv("TR_KAFKA_TOPIC_OUT", "to_index")
+TR_KAFKA_TOPIC_OUT = os.getenv("TR_KAFKA_TOPIC_OUT", "to_analyzer")
 TR_KAFKA_GROUP_ID = os.getenv("TR_KAFKA_GROUP_ID", "Transcription_group")
 
 TR_MODEL_NAME = os.getenv("TR_MODEL_NAME", "tiny")
@@ -90,8 +90,14 @@ INDEXER_ELASTICSEARCH_INDEX_LOG = os.getenv(
 )
 
 # ---------------------------------------------------------
-#
-
+# analyzer
+ANALYZER_KAFKA_HOST = os.getenv("ANALYZER_KAFKA_HOST", "localhost")
+ANALYZER_KAFKA_PORT = int(os.getenv("ANALYZER_KAFKA_PORT", 9092))
+ANALYZER_KAFKA_TOPIC_IN = os.getenv("ANALYZER_KAFKA_TOPIC_IN", "to_analyzer")
+ANALYZER_KAFKA_TOPIC_OUT = os.getenv("ANALYZER_KAFKA_TOPIC_IN", "to_index")
+ANALYZER_KAFKA_GROUP_ID = os.getenv("ANALYZER_KAFKA_GROUP_ID", "analyzer_group")
+ANALYZER_HOSTILE_WORDS = os.getenv("ANALYZER_HOSTILE_WORDS", "R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT")
+ANALYZER_LESS_HOSTILE_WORDS = os.getenv("ANALYZER_LESS_HOSTILE_WORDS", "RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ==")
 
 # ------------------------------------------------------------
 # logging
