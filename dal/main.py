@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from time import sleep
 
 import uvicorn
 from data_load import load_meta_data_for_directory, load_meta_data_for_file
@@ -40,7 +39,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application shutdown...")
     try:
-        producer.stop()
+        producer.stop() if producer else None
     except Exception as e:
         logger.error(f"Error during shutdown: {e}")
 
