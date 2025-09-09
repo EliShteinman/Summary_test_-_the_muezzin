@@ -37,9 +37,7 @@ async def main():
         logger.error(f"Failed to start Kafka: {e}")
         return
 
-    logger.info(
-        f"Starting to consume from topics: {config.TR_KAFKA_TOPIC_IN}"
-    )
+    logger.info(f"Starting to consume from topics: {config.TR_KAFKA_TOPIC_IN}")
     logger.info("Starting main processing loop...")
 
     # # Performance tracking variables
@@ -87,6 +85,7 @@ async def main():
     #     # Sleep between batches to prevent overwhelming the system
     #     await asyncio.sleep(5)
     #
+
 
 if __name__ == "__main__":
     try:

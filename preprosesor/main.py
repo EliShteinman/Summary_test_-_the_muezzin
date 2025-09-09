@@ -1,8 +1,14 @@
 import asyncio
 from time import sleep
 
-from dependencies import (get_consumer, get_es, get_mongo, set_consumer,
-                          set_es, set_mongo)
+from dependencies import (
+    get_consumer,
+    get_es,
+    get_mongo,
+    set_consumer,
+    set_es,
+    set_mongo,
+)
 
 import config
 from preprosesor.proses import Proses

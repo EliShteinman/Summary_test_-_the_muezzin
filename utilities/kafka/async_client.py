@@ -6,8 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
-from .json_helpers import (create_kafka_message, deserialize_json,
-                           serialize_json)
+from .json_helpers import create_kafka_message, deserialize_json, serialize_json
 
 logger = logging.getLogger(__name__)
 

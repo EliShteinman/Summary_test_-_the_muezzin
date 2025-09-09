@@ -19,9 +19,7 @@ async def lifespan(app: FastAPI):
     global producer
     logger.info("Starting retriever service...")
     boostrap_servers = f"{config.DAL_KAFKA_HOST}:{config.DAL_KAFKA_PORT}"
-    producer = KafkaProducerAsync(
-        bootstrap_servers=boostrap_servers
-    )
+    producer = KafkaProducerAsync(bootstrap_servers=boostrap_servers)
     logger.info(f"Initializing Kafka producer - {producer.get_config()}")
 
     try:
@@ -66,10 +64,7 @@ async def load_file(file_path: Path):
         logger.debug(Path(file_path))
         meta_data = load_meta_data_for_file(file_path)
         logger.debug(meta_data)
-        await producer.send_message(
-            config.TR_KAFKA_TOPIC_OUT,
-            meta_data
-        )
+        await producer.send_message(config.TR_KAFKA_TOPIC_OUT, meta_data)
         return {
             "status": "success",
             "file_path": meta_data["file_path"],
@@ -93,10 +88,7 @@ async def load_directory(directory_path: Path):
             logger.debug(meta_data)
             num_files += 1
             results.append(meta_data)
-            await producer.send_message(
-                config.TR_KAFKA_TOPIC_OUT,
-                meta_data
-            )
+            await producer.send_message(config.TR_KAFKA_TOPIC_OUT, meta_data)
         return {
             "status": "success",
             "num_files": num_files,

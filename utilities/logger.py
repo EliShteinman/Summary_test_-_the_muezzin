@@ -23,10 +23,11 @@ class Logger:
         logger.setLevel(level)
         if not logger.handlers:
             es = Elasticsearch(es_url)
+
             class ESHandler(logging.Handler):
                 def emit(self, record):
                     try:
-                         es.index(
+                        es.index(
                             index=index,
                             document={
                                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -37,6 +38,7 @@ class Logger:
                         )
                     except Exception as e:
                         print(f"ES log failed: {e}")
+
             logger.addHandler(ESHandler())
         logger.addHandler(logging.StreamHandler())
         cls._logger = logger

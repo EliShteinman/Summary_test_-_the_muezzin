@@ -12,6 +12,7 @@ from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
 logger = Logger.get_logger()
 
+
 class Proses:
     def __init__(
         self,

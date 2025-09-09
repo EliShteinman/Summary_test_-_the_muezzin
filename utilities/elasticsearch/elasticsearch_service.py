@@ -53,9 +53,9 @@ class ElasticsearchService:
             logger.error(f"Failed to initialize index: {e}")
             raise
 
-    async def create_document(self, document):
+    async def create_document(self, document, id=None):
         """Create a new document"""
-        doc_id = document["file_hash"]
+        doc_id = id or document["file_hash"]
         now = datetime.now(timezone.utc)
 
         doc_data = document
@@ -83,31 +83,27 @@ class ElasticsearchService:
             logger.error(f"Failed to get document {doc_id}: {e}")
             raise
 
-    # async def update_document(self, doc_id: str, update_data):
-    #     """Update a document"""
-    #     try:
-    #         # First check if document exists
-    #         existing = await self.get_document(doc_id)
-    #         if not existing:
-    #             return None
-    #
-    #         # Prepare update data
-    #         update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
-    #         update_dict['updated_at'] = datetime.now(timezone.utc)
-    #
-    #         self.es.update(
-    #             index=self.index_name,
-    #             id=doc_id,
-    #             body={'doc': update_dict}
-    #         )
-    #         self.es.indices.refresh(index=self.index_name)
-    #
-    #         return await self.get_document(doc_id)
-    #     except NotFoundError:
-    #         return None
-    #     except Exception as e:
-    #         logger.error(f"Failed to update document {doc_id}: {e}")
-    #         raise
+    async def update_document(self, doc_id: str, update_data):
+        """Update a document"""
+        try:
+            # Prepare update data
+            update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+            update_dict["updated_at"] = datetime.now(timezone.utc)
+
+            await self.es.update(
+                index=self.index_name,
+                id=doc_id,
+                body={"doc": update_dict, "doc_as_upsert": True},
+            )
+            self.es.indices.refresh(index=self.index_name)
+
+            return await self.get_document(doc_id)
+        except NotFoundError:
+            return None
+        except Exception as e:
+            logger.error(f"Failed to update document {doc_id}: {e}")
+            raise
+
     #
     # async def delete_document(self, doc_id: str) -> bool:
     #     """Delete a document"""

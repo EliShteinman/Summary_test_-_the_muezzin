@@ -91,23 +91,18 @@ def get_mongo():
         raise RuntimeError("MongoDB client is not set")
     return _mongo
 
-def set_stt(
-        model_name: str = "tiny",
-        download_root: str = r"C:\models\whisper"
-):
+
+def set_stt(model_name: str = "tiny", download_root: str = r"C:\models\whisper"):
     global _sst
-    _sst = WhisperService(
-        model_name=model_name,
-        download_root=download_root
-    )
+    _sst = WhisperService(model_name=model_name, download_root=download_root)
     return True
+
 
 def get_stt():
     if _sst is None:
         logger.error("Whisper Service is not set")
         raise RuntimeError("Whisper Service is not set")
     return _sst
-
 
 
 async def cleaning_resources():
