@@ -49,11 +49,11 @@ async def main():
             async for result in consumer.consume():
                 logger.debug(f"Received data: {result}")
                 topic = result["topic"]
-                file = result["value"]
+                file = result["value"]['data']
                 key = result["key"]
                 message_count += 1
                 processed_in_batch += 1
-                file_id = file.get("_id", "unknown_id")
+                file_id = result["value"]['key']
 
                 logger.debug(
                     f"Processing message #{message_count} from topic '{topic}' - File ID: {file_id}"

@@ -63,7 +63,7 @@ async def main():
                 logger.debug(f"Received data: {data}")
                 topic = data["topic"]
                 key = data["key"]
-                path = data.value.get("file_path")
+                path = data['value']['data']
                 message_count += 1
                 processed_in_batch += 1
 

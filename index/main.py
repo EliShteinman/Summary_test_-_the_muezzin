@@ -48,10 +48,11 @@ async def main():
                 key = result["key"]
                 message_count += 1
                 processed_in_batch += 1
-                file_id = file.get(key, "unknown_id")
+                file_id = file.get("file_hash", "unknown_id")
 
                 logger.debug(
-                    f"Processing message #{message_count} from topic '{topic}' - File ID: {file_id}"
+                    f"Processing message #{message_count} from topic '{topic}'"
+                    f" - File ID: {file_id}, Key: {key}"
                 )
 
                 # Track processing time for each message

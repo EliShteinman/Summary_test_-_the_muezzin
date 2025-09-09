@@ -87,7 +87,7 @@ class ElasticsearchService:
         """Update a document"""
         try:
             # Prepare update data
-            update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+            update_dict = {k: v for k, v in update_data.items() if v is not None}
             update_dict["updated_at"] = datetime.now(timezone.utc)
 
             await self.es.update(
