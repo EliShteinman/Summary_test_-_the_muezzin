@@ -12,7 +12,7 @@ logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting persister service")
+    logger.info("Starting storage service")
 
     client = MongoDBAsyncClient(config.STORAGE_MONGO_URI, config.STORAGE_MONGO_DB_NAME)
     try:
@@ -35,7 +35,6 @@ async def main():
         logger.error(f"Failed to start Kafka consumer: {e}")
         return
 
-    logger.info("Starting main processing loop")
 
     service = MongoService(client)
 
@@ -43,13 +42,15 @@ async def main():
     message_count = 0
     processed_in_batch = 0
     last_stats_time = time.time()
+    logger.info("Starting main processing loop")
 
     while True:
         try:
             async for result in consumer.consume():
-                topic = result.topic
-                file = result.value
-                key = result.key
+                logger.debug(f"Received data: {result}")
+                topic = result["topic"]
+                file = result["value"]
+                key = result["key"]
                 message_count += 1
                 processed_in_batch += 1
                 file_id = file.get("_id", "unknown_id")

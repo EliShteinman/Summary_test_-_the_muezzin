@@ -11,9 +11,9 @@ logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting service...")
+    logger.info("Starting transparency_recording service...")
     bootstrap_servers = (
-        f"{config.PREPROCESSOR_KAFKA_HOST}:{config.PREPROCESSOR_KAFKA_PORT}"
+        rf"{config.TR_KAFKA_HOST}:{config.TR_KAFKA_PORT}"
     )
 
     # Initialize Kafka producer and consumer
@@ -44,7 +44,7 @@ async def main():
 
     sst = WhisperService(
         model_name=config.TR_MODEL_NAME,
-        download_root=config.TR_DOWNLOAD_ROOT,
+        download_root=rf"{config.TR_DOWNLOAD_ROOT}",
     )
     tr = Transparency(
         sst=sst,
@@ -55,13 +55,14 @@ async def main():
     message_count = 0
     processed_in_batch = 0
     last_stats_time = time.time()
+    logger.info("Starting main processing loop")
 
     while True:
         try:
             async for data in consumer.consume():
                 logger.debug(f"Received data: {data}")
-                topic = data.topic
-                key = data.key
+                topic = data["topic"]
+                key = data["key"]
                 path = data.value.get("file_path")
                 message_count += 1
                 processed_in_batch += 1

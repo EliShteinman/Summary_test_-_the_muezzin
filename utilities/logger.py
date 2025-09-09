@@ -13,8 +13,8 @@ class Logger:
     def get_logger(
         cls,
         name=__name__,
-        es_url=f"{config.ELASTICSEARCH_PROTOCOL}://{config.ELASTICSEARCH_HOST}:{config.ELASTICSEARCH_PORT}",
-        index=config.ELASTICSEARCH_INDEX_LOG,
+        es_url=f"{config.LOG_ELASTICSEARCH_HOST}://{config.LOG_ELASTICSEARCH_HOST}:{config.LOG_ELASTICSEARCH_PORT}",
+        index=config.LOG_ELASTICSEARCH_INDEX_LOG,
         level=logging.DEBUG,
     ):
         if cls._logger:

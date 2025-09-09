@@ -88,3 +88,14 @@ INDEXER_ELASTICSEARCH_INDEX_DATA = os.getenv(
 INDEXER_ELASTICSEARCH_INDEX_LOG = os.getenv(
     "INDEXER_ELASTICSEARCH_INDEX_LOG", "podcasts_log"
 )
+
+# ---------------------------------------------------------
+#
+
+
+# ------------------------------------------------------------
+# logging
+LOG_ELASTICSEARCH_PROTOCOL = os.getenv("LOG_ELASTICSEARCH_PROTOCOL", "http")
+LOG_ELASTICSEARCH_HOST = os.getenv("LOG_ELASTICSEARCH_HOST", "localhost")
+LOG_ELASTICSEARCH_PORT = int(os.getenv("LOG_ELASTICSEARCH_PORT", 9200))
+LOG_ELASTICSEARCH_INDEX_LOG = os.getenv("LOG_ELASTICSEARCH_INDEX_LOG", "logs")

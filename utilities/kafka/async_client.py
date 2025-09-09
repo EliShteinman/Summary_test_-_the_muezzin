@@ -28,7 +28,7 @@ class KafkaProducerAsync:
         self.bootstrap_servers = bootstrap_servers
 
         self._default_config = {
-            "bootstrap_servers": bootstrap_servers,
+            "bootstrap_servers": rf"{bootstrap_servers}",
             "value_serializer": lambda x: serialize_json(x).encode("utf-8"),
             "key_serializer": lambda x: x.encode("utf-8") if x else None,
             "acks": "all",
@@ -67,7 +67,7 @@ class KafkaProducerAsync:
             except Exception as e:
                 logger.error(f"Error stopping Async Producer: {e}")
 
-    async def get_config(self):
+    def get_config(self):
         return self._default_config
 
     async def send_message(
@@ -339,6 +339,7 @@ class KafkaConsumerAsync:
 
         try:
             async for message in self.consumer:
+                logger.debug(f"Received message from '{message}")
                 yield {
                     "topic": message.topic,
                     "partition": message.partition,

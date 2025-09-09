@@ -13,7 +13,7 @@ logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting retriever service...")
+    logger.info("Starting indexer service...")
 
     # Initialize Kafka consumer
     consumer = KafkaConsumerAsync(
@@ -38,16 +38,17 @@ async def main():
     message_count = 0
     processed_in_batch = 0
     last_stats_time = time.time()
-    #
+    logger.info("Starting main processing loop")
     while True:
         try:
             async for result in consumer.consume():
-                topic = result.topic
-                file = result.value
-                key = result.key
+                logger.debug(f"Received data: {result}")
+                topic = result["topic"]
+                file = result["value"]['data']
+                key = result["key"]
                 message_count += 1
                 processed_in_batch += 1
-                file_id = file.get("_id", "unknown_id")
+                file_id = file.get(key, "unknown_id")
 
                 logger.debug(
                     f"Processing message #{message_count} from topic '{topic}' - File ID: {file_id}"

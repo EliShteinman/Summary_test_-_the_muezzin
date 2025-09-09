@@ -10,7 +10,7 @@ logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting service...")
+    logger.info("Starting preprocessor service...")
     bootstrap_servers = (
         f"{config.PREPROCESSOR_KAFKA_HOST}:{config.PREPROCESSOR_KAFKA_PORT}"
     )
@@ -45,11 +45,13 @@ async def main():
     message_count = 0
     processed_in_batch = 0
     last_stats_time = time.time()
-    #
+    logger.info("Starting main processing loop")
+
     while True:
         try:
             async for meta_data in consumer.consume():
-                topic = meta_data.topic
+                logger.debug(f"Received data: {meta_data}")
+                topic = meta_data['topic']
                 message_count += 1
                 processed_in_batch += 1
 
