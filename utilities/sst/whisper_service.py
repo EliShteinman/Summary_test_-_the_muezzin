@@ -1,5 +1,6 @@
-import whisper
 import logging
+
+import whisper
 
 logger = logging.getLogger(__name__)
 

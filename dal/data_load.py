@@ -1,12 +1,12 @@
-import logging
 import os
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 
 import config
+from utilities.logger import Logger
 
-logger = logging.getLogger(__name__)
+logger = Logger.get_logger()
 
 
 def load_meta_data_for_directory(directory_path):
@@ -52,7 +52,7 @@ def load_meta_data_for_file(file_path):
 
 
 if __name__ == "__main__":
-    for data in load_meta_data_for_directory(config.DIRECTORY_PATH):
+    for data in load_meta_data_for_directory(config.DAL_DIRECTORY_PATH):
         pprint(data)
 
     print(Path(r"C:\podcasts\download.wav"))

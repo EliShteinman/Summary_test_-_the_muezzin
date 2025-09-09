@@ -2,8 +2,7 @@ import asyncio
 import time
 
 import config
-
-from utilities.kafka.async_client import KafkaProducerAsync, KafkaConsumerAsync
+from utilities.kafka.async_client import KafkaConsumerAsync, KafkaProducerAsync
 from utilities.logger import Logger
 
 logger = Logger.get_logger()

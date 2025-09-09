@@ -1,13 +1,12 @@
 import asyncio
 from time import sleep
 
-from utilities.logger import Logger
-
 from dependencies import (get_consumer, get_es, get_mongo, set_consumer,
                           set_es, set_mongo)
 
 import config
 from preprosesor.proses import Proses
+from utilities.logger import Logger
 
 logger = Logger.get_logger()
 
