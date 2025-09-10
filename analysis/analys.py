@@ -17,12 +17,12 @@ class Analysis:
 
     def _analyze_text(self, text):
         hostile_count = (
-            sum(word in text for word in self.hostile_words)
+            self._find_sub_list(text, self.hostile_words)
             * config.ANALYZER_DANGEROUS_LIST_SCORE
         )
         logger.debug(f"hostile_count: {hostile_count}")
         less_hostile_count = (
-            sum(word in text for word in self.less_hostile_words)
+            self._find_sub_list(text, self.less_hostile_words)
             * config.ANALYZER_LOW_DANGEROUS_LIST_SCORE
         )
         logger.debug(f"less_hostile_count: {less_hostile_count}")
@@ -75,3 +75,10 @@ class Analysis:
         logger.info("Analysis completed")
         logger.debug(f"result: {result}")
         return result
+
+    @staticmethod
+    def _find_sub_list(text:str , lst):
+        count = 0
+        for word in lst:
+            count += text.count(word)
+        return count
