@@ -1,10 +1,10 @@
+import logging
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Dict, Optional, List
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 
 from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
-from utilities.logger import Logger
 
-logger = Logger.get_logger()
+logger = logging.getLogger(__name__)
 
 
 class ElasticSearchRepository:
@@ -17,7 +17,7 @@ class ElasticSearchRepository:
         search_params: Dict[str, Any],
         process_name: str,
         fields_to_include: Optional[List[str]] = None,
-        field_to_process: Optional[str] = None
+        field_to_process: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Generic method for enriching documents with analyzed data.
@@ -37,9 +37,9 @@ class ElasticSearchRepository:
 
         logger.info(f"Processing {docs_to_process} documents for {process_name}")
 
-
         fields_to_include = fields_to_include
         field_to_process = field_to_process
+
         async def generate_update_actions() -> AsyncGenerator[Dict[str, Any], None]:
             stream = self.es_repository.stream_all_documents(
                 fields_to_include=fields_to_include, **search_params
@@ -56,7 +56,7 @@ class ElasticSearchRepository:
                 analyzed_result: dict = analyzer_func(text_to_analyze)
                 logger.debug(f"Analyzed result: {analyzed_result}")
                 if analyzed_result:
-                    yield {
+                    data = {
                         "_op_type": "update",
                         "_index": self.es_repository.index_name,
                         "_id": doc["_id"],
@@ -65,6 +65,8 @@ class ElasticSearchRepository:
                             "updated_at": datetime.now(timezone.utc),
                         },
                     }
+                    logger.debug(f"Generated update action: {data}")
+                    yield data
                     processed_count += 1
 
                     if processed_count % 100 == 0:  # Log progress
