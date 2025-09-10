@@ -1,4 +1,4 @@
-name: Summary_test_-_the_muezzin
+name: The_muezzin
 
 services:
   elasticsearch:
@@ -32,6 +32,9 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     networks:
       - elastic_kafka
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+      - kibana_config:/usr/share/kibana/config
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
@@ -41,16 +44,14 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
-    container_name: zookeeper
     networks:
       - elastic_kafka
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  broker: #
+  broker:
     image: confluentinc/cp-kafka:7.2.15
-    container_name: broker
     networks:
       - elastic_kafka
     ports:
@@ -69,10 +70,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_L:PLAINTEXT,PLAINTEXT_C:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
 
-  # http://localhost:7777
   kafka-ui:
     image: provectuslabs/kafka-ui
-    container_name: kafka-ui
     networks:
       - elastic_kafka
     depends_on:
@@ -84,6 +83,8 @@ services:
       - KAFKA_CLUSTERS_0_NAME=broker
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:9093
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+
+
   mongodb:
     image: mongo:latest
     restart: unless-stopped
@@ -117,36 +118,13 @@ services:
       ME_CONFIG_BASICAUTH: "false"
     networks:
       - elastic_kafka
-#כאן ניתן להגדיר כל קונטיינר שתרצו שיהיה שייך לאותו רשת
-# זה דוגמא להגדרות קונטיינר
-  #  newsgroups:
-  #    build:
-  #      context: dal
-  #      dockerfile: Dockerfile
-  #    restart: unless-stopped
-  #    depends_on:
-  #      elasticsearch: { condition: service_healthy }
-  #    ports:
-  #      - "8182:8182"
-  #    environment:
-  #      - ELASTICSEARCH_PROTOCOL=http
-  #      - ELASTICSEARCH_HOST=elasticsearch
-  #      - ELASTICSEARCH_PORT=9200
-  #      - LOG_LEVEL=INFO
-  #      - ELASTICSEARCH_INDEX=newsgroups
-  #    networks:
-  #      - elastic_network
-  #    healthcheck:
-  #        test: ["CMD-SHELL", "curl -f http://localhost:8182/health || exit 1"]
-  #        interval: 30s
-  #        timeout: 10s
-  #        retries: 5
-  #        start_period: 60s
 
-# הגדרות הווליום
+
 volumes:
   elasticsearch:
   mongodb_data:
+  kibana_data:
+  kibana_config:
 
 networks:
   elastic_kafka:
