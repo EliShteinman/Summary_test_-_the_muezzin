@@ -84,7 +84,6 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:9093
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
 
-
   mongodb:
     image: mongo:latest
     restart: unless-stopped
@@ -119,12 +118,62 @@ services:
     networks:
       - elastic_kafka
 
+####################################################
+  text_analyzer:
+    build:
+      dockerfile: analyzer.dockerfile
+      context: .
+    networks:
+      - elastic_kafka
+    depends_on:
+      - elasticsearch
+      - mongodb
+      - broker
+    volumes:
+      - data:/app/data
+    environment:
+      ANALYZER_HOSTILE_WORDS: "R2Vub2NpZGUsV2FyIENyaW1lcyxBcGFydGhlaWQsTWFzc2FjcmUsTmFrYmEsRGlzcGxhY2VtZW50LEh1bWFuaXRhcmlhbiBDcmlzaXMsQmxvY2thZGUsT2NjdXBhdGlvbixSZWZ1Z2VlcyxJQ0MsQkRT"
+      ANALYZER_LESS_HOSTILE_WORDS: "RnJlZWRvbSBGbG90aWxsYSxSZXNpc3RhbmNlLExpYmVyYXRpb24sRnJlZSBQYWxlc3RpbmUsR2F6YSxDZWFzZWZpcmUsUHJvdGVzdCxVTlJXQQ=="
+      ANALYZER_DANGEROUS_LIST_SCORE: "8"
+      ANALYZER_LESS_DANGEROUS_LIST_SCORE: "4"
+      ANALYZER_SCORING_TO_DETERMINE_RISK: "15"
+      ANALYZER_MEDIUM_RISK_SCORE: "20"
+      ANALYZER_HIGH_RISK_SCORE: "30"
+      ANALYZER_NO_RISK_SCORE: ANALYZER_SCORING_TO_DETERMINE_RISK
+      ANALYZER_ELASTICSEARCH_PROTOCOL: "http"
+      ANALYZER_ELASTICSEARCH_HOST: "elasticsearch"
+      ANALYZER_ELASTICSEARCH_PORT: "9200"
+      ANALYZER_ELASTICSEARCH_INDEX_DATA: "podcasts"
+
+  preprocessing:
+    build:
+      dockerfile: preprocessing.dockerfile
+      context: .
+    networks:
+      - elastic_kafka
+    depends_on:
+      - elasticsearch
+      - mongodb
+      - broker
+    volumes:
+      - data:/app/data
+    environment:
+      PREPROCESSOR_KAFKA_HOST: "broker"
+      PREPROCESSOR_KAFKA_PORT: "9093"
+      PREPROCESSOR_KAFKA_TOPIC_IN: "podcasts_log"
+      PREPROCESSOR_KAFKA_GROUP_ID: "PREPROCESSOR_group"
+      PREPROCESSOR_KAFKA_TOPIC_OUT_TO_TRANSCRIPTION: "Transcription_file"
+      PREPROCESSOR_KAFKA_TOPIC_OUT_TO_STORAGE: "to_storage"
+      PREPROCESSOR_KAFKA_TOPIC_OUT_TO_INDEX: "to_index"
+
+
 
 volumes:
   elasticsearch:
   mongodb_data:
   kibana_data:
   kibana_config:
+  data:
 
 networks:
   elastic_kafka:
