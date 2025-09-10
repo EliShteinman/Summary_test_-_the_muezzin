@@ -1,0 +1,4 @@
+openai-whisper
+aiokafka
+ffmpeg-python
+elasticsearch

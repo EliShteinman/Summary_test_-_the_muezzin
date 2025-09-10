@@ -1,0 +1,5 @@
+aiokafka
+elasticsearch
+pandas
+
+

@@ -1,6 +1,5 @@
 fastapi
 aiohttp
-whisper
 openai-whisper
 aiokafka
 pymongo
