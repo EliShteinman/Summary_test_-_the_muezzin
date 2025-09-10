@@ -223,3 +223,11 @@ class ElasticsearchService:
         except Exception as e:
             logger.error(f"Elasticsearch connection failed: {e}")
             return False
+
+
+    async def is_index_exists(self) -> bool:
+        try:
+            return await self.es.indices.exists(index=self.index_name)
+        except Exception as e:
+            logger.error(f"Elasticsearch connection failed: {e}")
+            return False

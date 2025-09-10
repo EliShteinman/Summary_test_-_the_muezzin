@@ -49,8 +49,13 @@ class Analysis:
             return "high"
 
     async def run_analysis(self):
+        if not await self.es_service.is_index_exists():
+            logger.info("Index does not exist.")
+            return None
         logger.info("Starting analysis")
         result = await self.es_repository.generic_enrich_documents(
+            field_to_process="full_text",
+            fields_to_include=["full_text"],
             analyzer_func=self._analyze_text,
             search_params={
                 "not_exists_filters": ["is_bds", "bds_percent", "bsd_threat_level"],
