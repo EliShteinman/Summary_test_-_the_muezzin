@@ -19,9 +19,7 @@ async def lifespan(app: FastAPI):
     global producer
     logger.info("Starting retriever service...")
     boostrap_servers = rf"{config.DAL_KAFKA_HOST}:{config.DAL_KAFKA_PORT}"
-    producer = KafkaProducerAsync(
-        bootstrap_servers=boostrap_servers
-    )
+    producer = KafkaProducerAsync(bootstrap_servers=boostrap_servers)
     try:
         await producer.start()
         logger.info("Kafka producer started successfully")

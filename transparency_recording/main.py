@@ -1,20 +1,19 @@
 import asyncio
 import time
 
-import config
 from transparency import Transparency
+
+import config
 from utilities.kafka.async_client import KafkaConsumerAsync, KafkaProducerAsync
-from utilities.sst.whisper_service import WhisperService
 from utilities.logger import Logger
+from utilities.sst.whisper_service import WhisperService
 
 logger = Logger.get_logger()
 
 
 async def main():
     logger.info("Starting transparency_recording service...")
-    bootstrap_servers = (
-        rf"{config.TR_KAFKA_HOST}:{config.TR_KAFKA_PORT}"
-    )
+    bootstrap_servers = rf"{config.TR_KAFKA_HOST}:{config.TR_KAFKA_PORT}"
 
     # Initialize Kafka producer and consumer
     producer = KafkaProducerAsync(
@@ -63,7 +62,7 @@ async def main():
                 logger.debug(f"Received data: {data}")
                 topic = data["topic"]
                 key = data["key"]
-                path = data['value']['data']
+                path = data["value"]["data"]
                 message_count += 1
                 processed_in_batch += 1
 
@@ -101,7 +100,6 @@ async def main():
 
         # Sleep between batches to prevent overwhelming the system
         await asyncio.sleep(5)
-
 
 
 if __name__ == "__main__":

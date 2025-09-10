@@ -51,7 +51,7 @@ async def main():
         try:
             async for meta_data in consumer.consume():
                 logger.debug(f"Received data: {meta_data}")
-                topic = meta_data['topic']
+                topic = meta_data["topic"]
                 message_count += 1
                 processed_in_batch += 1
 

@@ -35,7 +35,6 @@ async def main():
         logger.error(f"Failed to start Kafka consumer: {e}")
         return
 
-
     service = MongoService(client)
 
     # Performance tracking variables
@@ -49,11 +48,11 @@ async def main():
             async for result in consumer.consume():
                 logger.debug(f"Received data: {result}")
                 topic = result["topic"]
-                file = result["value"]['data']
+                file = result["value"]["data"]
                 key = result["key"]
                 message_count += 1
                 processed_in_batch += 1
-                file_id = result["value"]['key']
+                file_id = result["value"]["key"]
 
                 logger.debug(
                     f"Processing message #{message_count} from topic '{topic}' - File ID: {file_id}"

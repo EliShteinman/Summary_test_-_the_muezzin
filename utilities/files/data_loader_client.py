@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -19,16 +19,16 @@ class UniversalDataLoader:
         self.encoding = encoding
 
         self.supported_formats = {
-            '.csv': self._load_csv,
-            '.tsv': self._load_tsv,
-            '.json': self._load_json,
-            '.jsonl': self._load_jsonlines,
-            '.xlsx': self._load_excel,
-            '.xls': self._load_excel,
-            '.parquet': self._load_parquet,
-            '.txt': self._load_text,
-            '.html': self._load_html,
-            '.xml': self._load_xml
+            ".csv": self._load_csv,
+            ".tsv": self._load_tsv,
+            ".json": self._load_json,
+            ".jsonl": self._load_jsonlines,
+            ".xlsx": self._load_excel,
+            ".xls": self._load_excel,
+            ".parquet": self._load_parquet,
+            ".txt": self._load_text,
+            ".html": self._load_html,
+            ".xml": self._load_xml,
         }
 
     def load_data(self, path: Optional[str] = None, **kwargs) -> pd.DataFrame:
@@ -58,22 +58,22 @@ class UniversalDataLoader:
 
     def _load_csv(self, path: str, **kwargs) -> pd.DataFrame:
         """Load CSV file."""
-        defaults = {'encoding': self.encoding, 'low_memory': False}
+        defaults = {"encoding": self.encoding, "low_memory": False}
         defaults.update(kwargs)
         return pd.read_csv(path, **defaults)
 
     def _load_tsv(self, path: str, **kwargs) -> pd.DataFrame:
         """Load TSV file."""
-        defaults = {'encoding': self.encoding, 'sep': '\t', 'low_memory': False}
+        defaults = {"encoding": self.encoding, "sep": "\t", "low_memory": False}
         defaults.update(kwargs)
         return pd.read_csv(path, **defaults)
 
     def _load_json(self, path: str, **kwargs) -> pd.DataFrame:
         """Load JSON file."""
-        defaults = {'encoding': self.encoding}
+        defaults = {"encoding": self.encoding}
         defaults.update(kwargs)
 
-        with open(path, 'r', encoding=defaults['encoding']) as f:
+        with open(path, "r", encoding=defaults["encoding"]) as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -85,13 +85,13 @@ class UniversalDataLoader:
 
     def _load_jsonlines(self, path: str, **kwargs) -> pd.DataFrame:
         """Load JSON Lines file."""
-        defaults = {'encoding': self.encoding, 'lines': True}
+        defaults = {"encoding": self.encoding, "lines": True}
         defaults.update(kwargs)
         return pd.read_json(path, **defaults)
 
     def _load_excel(self, path: str, **kwargs) -> pd.DataFrame:
         """Load Excel file."""
-        defaults = {'engine': 'openpyxl'}
+        defaults = {"engine": "openpyxl"}
         defaults.update(kwargs)
         return pd.read_excel(path, **defaults)
 
@@ -101,31 +101,33 @@ class UniversalDataLoader:
 
     def _load_text(self, path: str, **kwargs) -> pd.DataFrame:
         """Load text file (one line per row)."""
-        col_name = kwargs.get('column_name', 'text')
-        with open(path, 'r', encoding=self.encoding) as f:
+        col_name = kwargs.get("column_name", "text")
+        with open(path, "r", encoding=self.encoding) as f:
             lines = [line.strip() for line in f.readlines() if line.strip()]
         return pd.DataFrame(lines, columns=[col_name])
 
     def _load_html(self, path: str, **kwargs) -> pd.DataFrame:
         """Load HTML table."""
-        defaults = {'encoding': self.encoding}
+        defaults = {"encoding": self.encoding}
         defaults.update(kwargs)
         tables = pd.read_html(path, **defaults)
         return tables[0] if tables else pd.DataFrame()
 
     def _load_xml(self, path: str, **kwargs) -> pd.DataFrame:
         """Load XML file."""
-        defaults = {'encoding': self.encoding}
+        defaults = {"encoding": self.encoding}
         defaults.update(kwargs)
         return pd.read_xml(path, **defaults)
 
-    def load_lines_as_list(self, path: Optional[str] = None, strip_empty: bool = True) -> List[str]:
+    def load_lines_as_list(
+        self, path: Optional[str] = None, strip_empty: bool = True
+    ) -> List[str]:
         """Load text file as list of strings."""
         current_path = path or self.data_path
         if not current_path:
             raise ValueError("No data path provided")
 
-        with open(current_path, 'r', encoding=self.encoding) as f:
+        with open(current_path, "r", encoding=self.encoding) as f:
             lines = [line.strip() for line in f.readlines()]
 
         if strip_empty:
@@ -139,11 +141,11 @@ class UniversalDataLoader:
         file_extension = path_obj.suffix.lower()
 
         save_methods = {
-            '.csv': lambda: df.to_csv(path, index=False, **kwargs),
-            '.json': lambda: df.to_json(path, orient='records', **kwargs),
-            '.xlsx': lambda: df.to_excel(path, index=False, **kwargs),
-            '.parquet': lambda: df.to_parquet(path, **kwargs),
-            '.tsv': lambda: df.to_csv(path, sep='\t', index=False, **kwargs)
+            ".csv": lambda: df.to_csv(path, index=False, **kwargs),
+            ".json": lambda: df.to_json(path, orient="records", **kwargs),
+            ".xlsx": lambda: df.to_excel(path, index=False, **kwargs),
+            ".parquet": lambda: df.to_parquet(path, **kwargs),
+            ".tsv": lambda: df.to_csv(path, sep="\t", index=False, **kwargs),
         }
 
         if file_extension not in save_methods:
@@ -160,34 +162,36 @@ class UniversalDataLoader:
             raise FileNotFoundError(f"File not found: {path}")
 
         info = {
-            'filename': path_obj.name,
-            'extension': path_obj.suffix.lower(),
-            'size_bytes': path_obj.stat().st_size,
-            'size_mb': round(path_obj.stat().st_size / (1024 * 1024), 2),
-            'supported': path_obj.suffix.lower() in self.supported_formats
+            "filename": path_obj.name,
+            "extension": path_obj.suffix.lower(),
+            "size_bytes": path_obj.stat().st_size,
+            "size_mb": round(path_obj.stat().st_size / (1024 * 1024), 2),
+            "supported": path_obj.suffix.lower() in self.supported_formats,
         }
 
         # Try to get preview for supported formats
-        if info['supported']:
+        if info["supported"]:
             try:
                 df = self.load_data(path)
-                info.update({
-                    'rows': len(df),
-                    'columns': len(df.columns),
-                    'column_names': list(df.columns),
-                    'dtypes': df.dtypes.to_dict()
-                })
+                info.update(
+                    {
+                        "rows": len(df),
+                        "columns": len(df.columns),
+                        "column_names": list(df.columns),
+                        "dtypes": df.dtypes.to_dict(),
+                    }
+                )
             except Exception as e:
-                info['load_error'] = str(e)
+                info["load_error"] = str(e)
 
         return info
 
     def load_json_as_dict(self, path: str, **kwargs) -> Dict:
         """Load JSON file as dictionary."""
-        defaults = {'encoding': self.encoding}
+        defaults = {"encoding": self.encoding}
         defaults.update(kwargs)
 
-        with open(path, 'r', encoding=defaults['encoding']) as f:
+        with open(path, "r", encoding=defaults["encoding"]) as f:
             data = json.load(f)
 
         if isinstance(data, dict):

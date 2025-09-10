@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch.helpers import async_bulk, async_scan
 
 logger = logging.getLogger(__name__)
 
@@ -13,139 +14,9 @@ class ElasticsearchService:
         self.es = es
         self.index_name = index_name
 
-    def _create_document_mapping(self) -> Dict[str, Any]:
-        """Create optimized mapping for document storage and search"""
-        return {
-            "properties": {
-                "contentType": {
-                    "type": "text",
-                    "fields": {
-                        "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                        }
-                    }
-                },
-                "file_access_time": {
-                    "type": "time"
-                },
-                "file_creation_time": {
-                    "type": "time"
-                },
-                "file_hash": {
-                    "type": "keyword"
-                },
-                "file_modification_time": {
-                    "type": "date"
-                },
-                "file_name": {
-                    "type": "text",
-                    "fields": {
-                        "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                        }
-                    }
-                },
-                "file_size": {
-                    "type": "long"
-                },
-                "file_suffix": {
-                    "type": "text",
-                    "fields": {
-                        "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                        }
-                    }
-                },
-                "full_text": {
-                    "type": "text",
-                    "fields": {
-                        "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                        }
-                    }
-                },
-                "language": {
-                    "type": "text",
-                    "fields": {
-                        "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                        }
-                    }
-                },
-                "segments": {
-                    "properties": {
-                        "avg_logprob": {
-                            "type": "float"
-                        },
-                        "compression_ratio": {
-                            "type": "float"
-                        },
-                        "end": {
-                            "type": "float"
-                        },
-                        "id": {
-                            "type": "long"
-                        },
-                        "no_speech_prob": {
-                            "type": "float"
-                        },
-                        "seek": {
-                            "type": "long"
-                        },
-                        "start": {
-                            "type": "float"
-                        },
-                        "temperature": {
-                            "type": "float"
-                        },
-                        "text": {
-                            "type": "text",
-                            "fields": {
-                                "keyword": {
-                                    "type": "keyword",
-                                    "ignore_above": 256
-                                }
-                            }
-                        },
-                        "tokens": {
-                            "type": "long"
-                        },
-                        "words": {
-                            "properties": {
-                                "end": {
-                                    "type": "float"
-                                },
-                                "probability": {
-                                    "type": "float"
-                                },
-                                "start": {
-                                    "type": "float"
-                                },
-                                "word": {
-                                    "type": "text",
-                                    "fields": {
-                                        "keyword": {
-                                            "type": "keyword",
-                                            "ignore_above": 256
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "updated_at": {
-                    "type": "date"
-                }
-            }
-        }
-
-    async def initialize_index(self, index_name: str = None, mapping: dict = None) -> None:
+    async def initialize_index(
+        self, index_name: str = None, mapping: dict = None
+    ) -> None:
         """Initialize the Elasticsearch index with proper mapping"""
         index_name = index_name or self.index_name
         try:
@@ -160,10 +31,10 @@ class ElasticsearchService:
                     logger.info(f"Index {index_name} created successfully")
                     logger.debug(f"Mapping: {mapping}")
                 else:
-                    await self.es.indices.create(
-                        index=self.index_name
+                    await self.es.indices.create(index=self.index_name)
+                    logger.info(
+                        f"Index {index_name} created successfully with default mapping"
                     )
-                    logger.info(f"Index {index_name} created successfully with default mapping")
             else:
                 logger.info(f"Index {index_name} already exists")
         except Exception as e:
@@ -221,115 +92,134 @@ class ElasticsearchService:
             logger.error(f"Failed to update document {doc_id}: {e}")
             raise
 
-    #
-    # async def delete_document(self, doc_id: str) -> bool:
-    #     """Delete a document"""
-    #     try:
-    #         self.es.delete(index=self.index_name, id=doc_id)
-    #         self.es.indices.refresh(index=self.index_name)
-    #         return True
-    #     except NotFoundError:
-    #         return False
-    #     except Exception as e:
-    #         logger.error(f"Failed to delete document {doc_id}: {e}")
-    #         raise
-    #
-    # async def search_documents(
-    #     self,
-    #     query: Optional[str] = None,
-    #     category: Optional[str] = None,
-    #     tags: Optional[List[str]] = None,
-    #     author: Optional[str] = None,
-    #     status: Optional[str] = None,
-    #     limit: int = 10,
-    #     offset: int = 0
-    # ):
-    #     """Advanced search with multiple filters"""
-    #     search_body = {
-    #         'query': {'bool': {'must': [], 'filter': []}},
-    #         'from': offset,
-    #         'size': limit,
-    #         'sort': [{'created_at': {'order': 'desc'}}]
-    #     }
-    #
-    #     # Text search
-    #     if query:
-    #         search_body['query']['bool']['must'].append({
-    #             'multi_match': {
-    #                 'query': query,
-    #                 'fields': ['title^2', 'body'],
-    #                 'type': 'best_fields'
-    #             }
-    #         })
-    #     else:
-    #         search_body['query']['bool']['must'].append({'match_all': {}})
-    #
-    #     # Filters
-    #     if category:
-    #         search_body['query']['bool']['filter'].append({'term': {'category': category}})
-    #
-    #     if tags:
-    #         search_body['query']['bool']['filter'].append({'terms': {'tags': tags}})
-    #
-    #     if author:
-    #         search_body['query']['bool']['filter'].append({'term': {'author': author}})
-    #
-    #     if status:
-    #         search_body['query']['bool']['filter'].append({'term': {'status': status}})
-    #
-    #     try:
-    #         result = self.es.search(index=self.index_name, body=search_body)
-    #
-    #         documents = [
-    #             DocumentResponse(id=hit['_id'], **hit['_source'])
-    #             for hit in result['hits']['hits']
-    #         ]
-    #
-    #         return SearchResponse(
-    #             total_hits=result['hits']['total']['value'],
-    #             max_score=result['hits']['max_score'],
-    #             took_ms=result['took'],
-    #             documents=documents
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"Search failed: {e}")
-    #         raise
-    #
-    # async def bulk_create_documents(self, documents: List[DocumentCreate]) -> Dict[str, Any]:
-    #     """Bulk create documents"""
-    #     actions = []
-    #     now = datetime.utcnow()
-    #
-    #     for doc in documents:
-    #         doc_id = str(uuid.uuid4())
-    #         doc_data = doc.dict()
-    #         doc_data.update({
-    #             'created_at': now,
-    #             'updated_at': now
-    #         })
-    #
-    #         actions.extend([
-    #             {'index': {'_index': self.index_name, '_id': doc_id}},
-    #             doc_data
-    #         ])
-    #
-    #     try:
-    #         result = self.es.bulk(body=actions)
-    #         self.es.indices.refresh(index=self.index_name)
-    #
-    #         success_count = sum(1 for item in result['items'] if 'error' not in item.get('index', {}))
-    #         error_count = len(result['items']) - success_count
-    #         errors = [
-    #             str(item.get('index', {}).get('error', ''))
-    #             for item in result['items']
-    #             if 'error' in item.get('index', {})
-    #         ]
-    #
-    #         return {
-    #             'success_count': success_count,
-    #             'error_count': error_count,
-    #             'errors': errors
-    #         }
-    #     except Exception as e:
-    #         logger.error(f"Bulk create failed: {e}")
-    #         raise
+    @staticmethod
+    def _build_query(
+        query_text: Optional[str] = None,
+        search_terms: Optional[List[str]] = None,
+        # Generic filters
+        term_filters: Optional[Dict[str, Any]] = None,
+        exists_filters: Optional[List[str]] = None,
+        not_exists_filters: Optional[List[str]] = None,
+        terms_filters: Optional[Dict[str, List[str]]] = None,
+        range_filters: Optional[Dict[str, Dict[str, Any]]] = None,
+        script_filters: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generic query builder that supports various filter types.
+
+        Args:
+            query_text: Full text search
+            search_terms: Terms to search in text field
+            term_filters: {field: value} for exact matches
+            exists_filters: [field1, field2] for fields that must exist
+            not_exists_filters: [field1, field2] for fields that must NOT exist
+            terms_filters: {field: [value1, value2]} for multiple values
+            range_filters: {field: {"gte": 5, "lt": 10}} for range queries
+            script_filters: ["doc['field'].size() >= 2"] for script queries
+        """
+        must_clauses: List[Dict[str, Any]] = []
+        filter_clauses: List[Dict[str, Any]] = []
+        must_not_clauses: List[Dict[str, Any]] = []
+
+        # Text search
+        if query_text:
+            must_clauses.append({"match": {"text": query_text}})
+        elif search_terms:
+            must_clauses.append({"terms": {"text": search_terms}})
+        else:
+            must_clauses.append({"match_all": {}})
+
+        # Term filters (exact matches)
+        if term_filters:
+            for field, value in term_filters.items():
+                filter_clauses.append({"term": {field: value}})
+
+        # Exists filters
+        if exists_filters:
+            for field in exists_filters:
+                filter_clauses.append({"exists": {"field": field}})
+
+        # Not exists filters
+        if not_exists_filters:
+            for field in not_exists_filters:
+                must_not_clauses.append({"exists": {"field": field}})
+
+        # Terms filters (multiple values)
+        if terms_filters:
+            for field, values in terms_filters.items():
+                filter_clauses.append({"terms": {field: values}})
+
+        # Range filters
+        if range_filters:
+            for field, range_config in range_filters.items():
+                filter_clauses.append({"range": {field: range_config}})
+
+        # Script filters
+        if script_filters:
+            for script_source in script_filters:
+                filter_clauses.append({"script": {"script": {"source": script_source}}})
+
+        return {
+            "bool": {
+                "must": must_clauses,
+                "filter": filter_clauses,
+                "must_not": must_not_clauses,
+            }
+        }
+
+    async def stream_all_documents(
+        self, fields_to_include: Optional[List[str]] = None, **kwargs: Any
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Streams all documents matching a query, yielding them one by one.
+        Efficient for processing large result sets.
+        """
+        query = self._build_query(**kwargs)
+        search_body = {"query": query}
+        try:
+            async for hit in async_scan(
+                client=self.es,
+                index=self.index_name,
+                query=search_body,
+                _source=fields_to_include,
+                size=200,
+            ):
+                yield hit
+        except Exception as e:
+            logger.error(f"Streaming documents failed: {e}", exc_info=True)
+            raise
+
+    async def bulk_update(
+        self, actions: AsyncGenerator[Dict[str, Any], None]
+    ) -> Dict[str, Any]:
+        """
+        Performs bulk updates using a provided iterable of actions.
+        Ideal for enriching documents.
+        """
+        try:
+            success, failed = await async_bulk(self.es, actions, stats_only=True)
+            await self.es.indices.refresh(index=self.index_name)
+            return {"success_count": success, "error_count": failed}
+        except Exception as e:
+            logger.error(f"Bulk update failed: {e}")
+            raise
+
+    async def count(self, **kwargs: Any) -> int:
+        """Counts documents matching a query."""
+        try:
+            query = self._build_query(**kwargs)
+            response = await self.es.count(index=self.index_name, query=query)
+            return response.get("count", 0)
+        except Exception as e:
+            logger.error(f"Count query failed: {e}", exc_info=True)
+            return 0
+
+    async def refresh(self):
+        return await self.es.indices.refresh(index=self.index_name)
+
+    async def is_connected(self) -> bool:
+        try:
+            return await self.es.ping()
+        except Exception as e:
+            logger.error(f"Elasticsearch connection failed: {e}")
+            return False

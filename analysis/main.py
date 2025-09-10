@@ -1,108 +1,52 @@
 import asyncio
-import time
-from utilities.encoding import Encoding
-import config
-from utilities.kafka.async_client import KafkaConsumerAsync, KafkaProducerAsync
-from utilities.logger import Logger
+from datetime import datetime
+
 from analys import Analysis
+from elasticsearch import AsyncElasticsearch
+
+import config
+from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
+from utilities.encoding import Encoding
+from utilities.logger import Logger
 
 logger = Logger.get_logger()
 
 
 async def main():
-    logger.info("Starting analyser service...")
-    bootstrap_servers = (
-        rf"{config.ANALYZER_KAFKA_HOST}:{config.ANALYZER_KAFKA_PORT}"
-    )
-
-    # Initialize Kafka producer and consumer
-    producer = KafkaProducerAsync(
-        bootstrap_servers=bootstrap_servers,
-    )
-
+    logger.info("Starting analysis service...")
     try:
-        await producer.start()
-        logger.info("Kafka producer and consumer started successfully")
+        es_url = f"{config.ANALYZER_ELASTICSEARCH_PROTOCOL}://{config.ANALYZER_ELASTICSEARCH_HOST}:{config.ANALYZER_ELASTICSEARCH_PORT}"
+        es_client = AsyncElasticsearch(es_url)
+        es = ElasticsearchService(es_client, config.ANALYZER_ELASTICSEARCH_INDEX_DATA)
+        await es.is_connected()
+        logger.info("Elasticsearch client initialized successfully")
     except Exception as e:
-        logger.error(f"Failed to start Kafka: {e}")
+        logger.error(f"Failed to initialize Elasticsearch client: {e}")
         return
 
-    consumer = KafkaConsumerAsync(
-        [config.ANALYZER_KAFKA_TOPIC_IN],
-        bootstrap_servers=bootstrap_servers,
-        group_id=config.ANALYZER_KAFKA_GROUP_ID,
-    )
-
-    try:
-        await producer.start()
-        await consumer.start()
-        logger.info("Kafka producer and consumer started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start Kafka: {e}")
-        return
-
+    logger.info("Starting encoding process")
     encodings = Encoding()
     hostile = encodings.decode_base64(config.ANALYZER_HOSTILE_WORDS)
     hostile = hostile.split(",")
     less_hostile = encodings.decode_base64(config.ANALYZER_LESS_HOSTILE_WORDS)
     less_hostile = less_hostile.split(",")
+    logger.info("Encoding process completed")
 
     analysis = Analysis(
-        producer,
-        less_hostile,
-        hostile,
+        es_service=es,
+        hostile_words=hostile,
+        less_hostile_words=less_hostile,
     )
-    # Performance tracking variables
-    message_count = 0
-    processed_in_batch = 0
-    last_stats_time = time.time()
     logger.info("Starting main processing loop")
 
     while True:
         try:
-            async for data in consumer.consume():
-                logger.debug(f"Received data: {data}")
-                topic = data["topic"]
-                key = data["key"]
-                data = data['value']
-                message_count += 1
-                processed_in_batch += 1
-
-                logger.debug(
-                    f"Processing message #{message_count} from topic '{topic}'"
-                )
-
-                # Track processing time for each message
-                process_start_time = time.time()
-                result = analysis.analysis(
-                    data=data,
-                    key=key,
-                )
-                processing_time = time.time() - process_start_time
-                logger.debug(f"Result: {result}")
-                logger.info(f"Processed file {key} in {processing_time:.3f}s")
-
-                # Print statistics every 60 seconds
-                current_time = time.time()
-                if current_time - last_stats_time > 60:
-                    rate = processed_in_batch / 60
-                    logger.info(
-                        f"Processing rate: {rate:.2f} messages/second | Total processed: {message_count}"
-                    )
-
-                    last_stats_time = current_time
-                    processed_in_batch = 0
-
-                # Log every 100 messages for general tracking
-                if message_count % 100 == 0:
-                    logger.info(f"Milestone: Processed {message_count} total messages")
-
+            await asyncio.create_task(analysis.run_analysis())
         except Exception as e:
             logger.error(f"Error consuming messages from Kafka: {e}")
 
-        # Sleep between batches to prevent overwhelming the system
-        await asyncio.sleep(5)
-
+        logger.debug(f"Sleeping for 60 seconds..., time now {datetime.now()}")
+        await asyncio.sleep(60)
 
 
 if __name__ == "__main__":

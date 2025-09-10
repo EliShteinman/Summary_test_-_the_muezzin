@@ -33,9 +33,15 @@ def load_meta_data_for_file(file_path):
                 "file_suffix": file.suffix.replace(".", ""),
                 "file_name": file.stem,
                 "file_size": file.stat().st_size,
-                "file_creation_time": datetime.fromtimestamp(file.stat().st_ctime, timezone.utc),
-                "file_modification_time": datetime.fromtimestamp(file.stat().st_mtime, timezone.utc),
-                "file_access_time": datetime.fromtimestamp(file.stat().st_atime, timezone.utc),
+                "file_creation_time": datetime.fromtimestamp(
+                    file.stat().st_ctime, timezone.utc
+                ),
+                "file_modification_time": datetime.fromtimestamp(
+                    file.stat().st_mtime, timezone.utc
+                ),
+                "file_access_time": datetime.fromtimestamp(
+                    file.stat().st_atime, timezone.utc
+                ),
             },
         }
         logger.debug(f"Metadata loaded from {file} : {meta_data}")

@@ -1,10 +1,11 @@
 from gridfs import AsyncGridFS
 
 import config
-from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 from utilities.logger import Logger
+from utilities.mongoDB.mongodb_async_client import MongoDBAsyncClient
 
 logger = Logger.get_logger()
+
 
 class MongoService:
     def __init__(self, mongo_client: MongoDBAsyncClient):
@@ -20,5 +21,7 @@ class MongoService:
             return file_hash
         logger.debug(f"Uploading file: {file_path}, with hash: {file_hash}")
         result = await self.fs.put(data=open(file_path, "rb"), _id=file_hash)
-        logger.debug(f"Uploaded file: {file_path}, with hash: {file_hash}, result: {result}")
+        logger.debug(
+            f"Uploaded file: {file_path}, with hash: {file_hash}, result: {result}"
+        )
         return result

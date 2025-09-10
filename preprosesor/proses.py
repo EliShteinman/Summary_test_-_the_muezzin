@@ -12,8 +12,8 @@ class Proses:
         self.producer = producer
 
     async def proses(self, data: dict):
-        path = data['value']['data']["file_path"]
-        meta_data = data['value']['data']["meta_data"]
+        path = data["value"]["data"]["file_path"]
+        meta_data = data["value"]["data"]["meta_data"]
         file_hash = self._get_file_hash(path)
         meta_data["file_hash"] = file_hash
         meta_data["contentType"] = f"audio/{meta_data['file_suffix']}"

@@ -6,9 +6,10 @@ from indux import Index
 
 import config
 from utilities.elasticsearch.elasticsearch_service import ElasticsearchService
+from utilities.files.data_loader_client import UniversalDataLoader
 from utilities.kafka.async_client import KafkaConsumerAsync
 from utilities.logger import Logger
-from utilities.files.data_loader_client import UniversalDataLoader
+
 logger = Logger.get_logger()
 
 
@@ -30,9 +31,7 @@ async def main():
         return
     dal = UniversalDataLoader()
     try:
-        mapping = dal.load_json_as_dict(
-            r'mapping.json'
-        )
+        mapping = dal.load_json_as_dict(r"mapping.json")
     except Exception as e:
         logger.error(f"Failed to load mapping: {e}")
         return
@@ -41,8 +40,11 @@ async def main():
         es_url = f"{config.INDEXER_ELASTICSEARCH_PROTOCOL}://{config.INDEXER_ELASTICSEARCH_HOST}:{config.INDEXER_ELASTICSEARCH_PORT}"
         es_client = AsyncElasticsearch(es_url)
         es = ElasticsearchService(es_client, config.INDEXER_ELASTICSEARCH_INDEX_DATA)
+        await es.is_connected()
+        logger.debug("Elasticsearch client is connected")
         await es.initialize_index(mapping=mapping)
-        logger.info("Elasticsearch client initialized successfully")
+        logger.info("Elasticsearch client initialized successfully with mapping")
+        logger.debug(f"Mapping: {mapping}")
     except Exception as e:
         logger.error(f"Failed to initialize Elasticsearch client: {e}")
         return
@@ -59,7 +61,7 @@ async def main():
             async for result in consumer.consume():
                 logger.debug(f"Received data: {result}")
                 topic = result["topic"]
-                file = result["value"]['data']
+                file = result["value"]["data"]
                 key = result["key"]
                 message_count += 1
                 processed_in_batch += 1

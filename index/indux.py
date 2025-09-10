@@ -4,6 +4,7 @@ from utilities.logger import Logger
 
 logger = Logger.get_logger()
 
+
 class Index:
     def __init__(self, es: ElasticsearchService):
         self.es = es
