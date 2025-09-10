@@ -2,8 +2,6 @@ FROM python:3.13
 
 RUN apt-get update
 RUN apt-get install -y ffmpeg
-RUN pip install --upgrade pip
-RUN pip install -U openai-whisper
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
