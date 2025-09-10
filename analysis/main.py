@@ -28,8 +28,10 @@ async def main():
     encodings = Encoding()
     hostile = encodings.decode_base64(config.ANALYZER_HOSTILE_WORDS)
     hostile = hostile.split(",")
+    logger.debug(f"Hostile words: {hostile}")
     less_hostile = encodings.decode_base64(config.ANALYZER_LESS_HOSTILE_WORDS)
     less_hostile = less_hostile.split(",")
+    logger.debug(f"Less hostile words: {less_hostile}")
     logger.info("Encoding process completed")
 
     analysis = Analysis(

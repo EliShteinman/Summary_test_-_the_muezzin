@@ -20,15 +20,24 @@ class Analysis:
             sum(word in text for word in self.hostile_words)
             * config.ANALYZER_DANGEROUS_LIST_SCORE
         )
-        less_hostile_count = sum(word in text for word in self.less_hostile_words)
+        logger.debug(f"hostile_count: {hostile_count}")
+        less_hostile_count = (
+            sum(word in text for word in self.less_hostile_words)
+            * config.ANALYZER_LOW_DANGEROUS_LIST_SCORE
+        )
+        logger.debug(f"less_hostile_count: {less_hostile_count}")
         scored_words = hostile_count + less_hostile_count
-        length = len(text)
+        logger.debug(f"scored_words: {scored_words}")
+        length = len(text.split())
+        logger.debug(f"length: {length}")
         danger_scored = self._percentage_calculation(scored_words, length)
+        logger.debug(f"danger_scored: {danger_scored}")
         result = {
             "is_bds": self._is_it_bds(danger_scored),
             "bds_percent": danger_scored,
             "bds_threat_level": self._risk_level_calculation(danger_scored),
         }
+        logger.debug(f"result: {result}")
         return result
 
     @staticmethod

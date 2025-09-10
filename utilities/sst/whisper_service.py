@@ -30,13 +30,13 @@ class WhisperService:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
 
     whisper_service = WhisperService(
         model_name="tiny", download_root=r"C:\models\whisper"
     )
 
     result = whisper_service.whisper_transcribe(
-        r"C:\podcasts\download (18).wav", "jhgyuftydtuyytftrdtr"
+        r"C:\podcasts\download (14).wav",
+        "jhgyuftydtuyytftrdtr",
+        verbose=True,
     )
-    pprint(result["full_text"])
